@@ -1,6 +1,7 @@
-﻿package main
+package main
 
 import (
+	"log"
 	"path"
 	"time"
 	"uuid"
@@ -53,4 +54,83 @@ func NewBookmark(url string) Bookmark {
 		Icon:         "",
 		Tags:         []string{},
 	}
+}
+
+func NewBookmarkNamed(url string, name string) Bookmark {
+	now := time.Now().Unix()
+	return Bookmark{
+		Url:          url,
+		Name:         name,
+		Desc:         "",
+		DateAdded:    now,
+		DateModified: now,
+		DateLastUsed: now,
+		Guid:         uuid.New().String(),
+		Icon:         "",
+		Tags:         []string{},
+	}
+}
+
+func BookmarkFromChromium(cb *ChromiumBookmark) Bookmark {
+	return Bookmark{
+		Version:      CurrentVersionBookmark,
+		Url:          cb.Url,
+		Name:         cb.Name,
+		Desc:         "",
+		DateAdded:    cb.DateAdded,
+		DateModified: cb.DateModified,
+		DateLastUsed: cb.DateLastUsed,
+		Guid:         cb.Guid,
+		Icon:         "",
+		Tags:         []string{},
+	}
+}
+
+func BookmarkCollectionFromChromium(cb *ChromiumBookmark) *BookmarkCollection {
+	out := BookmarkCollection{
+		Version:      CurrentVersionBookmarkCollection,
+		Name:         cb.Name,
+		Guid:         cb.Guid,
+		DateAdded:    cb.DateAdded,
+		DateModified: cb.DateModified,
+		Icon:         "",
+		Desc:         "",
+		Tags:         []string{},
+		Children:     nil,
+		Subfolders:   nil,
+	}
+	urls, folders, other := cb.SplitChildren()
+	if len(other) > 0 {
+		log.Fatalf("Other wasn't empty: %v", other)
+	}
+
+	out.Children = make([]Bookmark, 0, len(urls))
+	for _, url := range urls {
+		out.Children = append(out.Children, BookmarkFromChromium(&url))
+	}
+	out.Subfolders = make([]BookmarkCollection, 0, len(folders))
+	for _, folder := range folders {
+		out.Subfolders = append(out.Subfolders, *BookmarkCollectionFromChromium(&folder))
+	}
+	return &out
+}
+
+func BookmarkCollectionFromChromiumCollection(cb *ChromiumBookmarkCollection) *BookmarkCollection {
+	now := time.Now().Unix()
+	out := BookmarkCollection{
+		Version:      CurrentVersionBookmarkCollection,
+		Name:         "",
+		Guid:         uuid.New().String(),
+		DateAdded:    now,
+		DateModified: now,
+		Icon:         "",
+		Desc:         "",
+		Tags:         []string{},
+		Children:     []Bookmark{},
+		Subfolders:   make([]BookmarkCollection, 0, 3),
+	}
+	out.Subfolders = append(out.Subfolders, *BookmarkCollectionFromChromium(&cb.Roots.BookmarkBar))
+	out.Subfolders = append(out.Subfolders, *BookmarkCollectionFromChromium(&cb.Roots.Other))
+	out.Subfolders = append(out.Subfolders, *BookmarkCollectionFromChromium(&cb.Roots.Synced))
+	return &out
 }

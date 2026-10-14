@@ -1,4 +1,4 @@
-﻿package main
+package main
 
 import (
 	"encoding/json/v2"
@@ -12,6 +12,15 @@ var dir = "data"
 
 func main() {
 	args := os.Args[1:]
+	if len(args) > 0 && args[0] == "extract" {
+		if len(args) > 1 {
+			extractChromiumBookmarksFrom(args[1])
+		} else {
+			extractChromiumBookmarks("Edge", "Default")
+		}
+		return
+	}
+
 	bookmarks := make([]Bookmark, 0, len(args))
 	for _, arg := range args {
 		bookmarks = append(bookmarks, NewBookmark(arg))
