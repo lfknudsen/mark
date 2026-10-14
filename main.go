@@ -6,76 +6,9 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 var dir = "data"
-
-var programmeVersion = "0.0.1"
-
-var importCommand = "extract"
-var fileShorthand = "-f"
-var fileLongform = "--file"
-var browserShorthand = "-b"
-var browserLongform = "--browser"
-var profileShorthand = "-p"
-var profileLongform = "--profile"
-var defaultProfileName = "Default"
-
-var HELP = fmt.Sprintf("Mark v%s\n", programmeVersion) +
-	"Usage:\n" +
-	"  $ mark <URLs...>\n" +
-	fmt.Sprintf("  $ mark %s (%s|%s) <browser name> [Options]\n", importCommand, browserShorthand, browserLongform) +
-	"Extract options:\n" +
-	fmt.Sprintf("%s <file>\n%s <file>\t\t\tImport from a specific bookmark file\n", fileLongform, fileShorthand) +
-	"\n" +
-	fmt.Sprintf("%s <profile name>\n%s <profile name>\t\tImport from this profile. If unsure, or on Edge with a Microsoft account, leave blank.", profileLongform, profileShorthand)
-
-func parseExtractCommand(args []string) {
-	file := ""
-	browser := ""
-	profile := defaultProfileName
-
-	if len(args) == 0 || len(args)%2 != 0 {
-		fmt.Print(HELP)
-		os.Exit(1)
-	}
-	if len(args) == 1 {
-		browser = args[0]
-	}
-	for len(args) >= 2 {
-		switch args[0] {
-		case fileShorthand, fileLongform:
-			file = args[1]
-		case browserShorthand, browserLongform:
-			browser = args[1]
-		case profileShorthand, profileLongform:
-			profile = args[1]
-		}
-		args = args[2:]
-	}
-	if file != "" {
-		if browser == "" {
-			log.Fatal("Please specify a browser name.")
-		}
-		switch strings.ToLower(browser) {
-		case "edge", "brave", "chrome", "chromium":
-			extractChromiumBookmarksFrom(file)
-		case "firefox":
-			extractFirefoxBookmarksFrom(file)
-		}
-		return
-	}
-	if browser != "" {
-		switch strings.ToLower(browser) {
-		case "edge", "brave", "chrome", "chromium":
-			extractChromiumBookmarks(browser, profile)
-		case "firefox":
-			extractFirefoxBookmarks()
-		}
-		return
-	}
-}
 
 func main() {
 	args := os.Args[1:]
@@ -83,7 +16,7 @@ func main() {
 		fmt.Print(HELP)
 		os.Exit(0)
 	}
-	if len(args) > 0 && args[0] == importCommand {
+	if args[0] == importCommand {
 		parseExtractCommand(args[1:])
 		return
 	}
