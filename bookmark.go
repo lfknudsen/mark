@@ -136,3 +136,22 @@ func BookmarkCollectionFromChromiumCollection(cb *ChromiumBookmarkCollection) *B
 	out.Subfolders = append(out.Subfolders, *BookmarkCollectionFromChromium(&cb.Roots.Synced))
 	return &out
 }
+
+func BookmarkCollectionFromFirefox(ff *FirefoxBookmark) *BookmarkCollection {
+	now := time.Now().Unix()
+	return &BookmarkCollection{
+		Version:             CurrentVersionBookmarkCollection,
+		Name:                ff.Title,
+		Guid:                ff.Guid,
+		DateAdded:           ff.DateAdded,
+		DateModified:        ff.LastModified,
+		DateAddedContent:    now,
+		DateModifiedContent: now,
+		DateLastUsedContent: ff.LastModified,
+		Icon:                "",
+		Desc:                "",
+		Tags:                []string{},
+		Children:            []Bookmark{},
+		Subfolders:          []BookmarkCollection{},
+	}
+}
