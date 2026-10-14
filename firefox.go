@@ -13,11 +13,11 @@ import (
 type FirefoxBookmark struct {
 	Guid         string            `json:"guid"`
 	Title        string            `json:"title"`
-	Index        uint64            `json:"index"`
-	DateAdded    uint64            `json:"dateAdded"`
-	LastModified uint64            `json:"lastModified"`
-	Id           uint64            `json:"id"`
-	TypeCode     uint8             `json:"typeCode"`
+	Index        int64             `json:"index"`
+	DateAdded    int64             `json:"dateAdded"`
+	LastModified int64             `json:"lastModified"`
+	Id           int64             `json:"id"`
+	TypeCode     int               `json:"typeCode"`
 	Type         string            `json:"type"`
 	Root         string            `json:"root"`
 	Children     []FirefoxBookmark `json:"children"`
