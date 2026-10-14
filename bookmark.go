@@ -44,6 +44,7 @@ type BookmarkCollection struct {
 func NewBookmark(url string) Bookmark {
 	now := time.Now().Unix()
 	return Bookmark{
+		Version:      CurrentVersionBookmark,
 		Url:          url,
 		Name:         path.Base(url),
 		Desc:         "",
@@ -59,6 +60,7 @@ func NewBookmark(url string) Bookmark {
 func NewBookmarkNamed(url string, name string) Bookmark {
 	now := time.Now().Unix()
 	return Bookmark{
+		Version:      CurrentVersionBookmark,
 		Url:          url,
 		Name:         name,
 		Desc:         "",
