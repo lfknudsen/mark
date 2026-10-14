@@ -11,32 +11,32 @@ var CurrentVersionBookmark = "1.0.0"
 var CurrentVersionBookmarkCollection = "1.0.0"
 
 type Bookmark struct {
-	Version      string
-	Url          string
-	Name         string
-	Desc         string
-	DateAdded    int64
-	DateModified int64
-	DateLastUsed int64
-	Guid         string
-	Icon         string
-	Tags         []string
+	Version      string   `sql:"version" json:"version,omitempty"`
+	Url          string   `sql:"url" json:"url,omitempty"`
+	Name         string   `sql:"name" json:"name,omitempty"`
+	Desc         string   `sql:"desc" json:"desc,omitempty"`
+	DateAdded    int64    `sql:"date_added" json:"date_added,omitempty"`
+	DateModified int64    `sql:"date_modified" json:"date_modified,omitempty"`
+	DateLastUsed int64    `sql:"date_last_used" json:"date_last_used,omitempty"`
+	Guid         string   `sql:"guid" json:"guid,omitempty"`
+	Icon         string   `sql:"icon" json:"icon,omitempty"`
+	Tags         []string `sql:"-" json:"tags,omitempty"`
 }
 
 type BookmarkCollection struct {
-	Version             string
-	Name                string
-	Guid                string
-	DateAdded           int64
-	DateModified        int64
-	DateAddedContent    int64
-	DateModifiedContent int64
-	DateLastUsedContent int64
-	Icon                string
-	Desc                string
-	Tags                []string
-	Children            []Bookmark
-	Subfolders          []BookmarkCollection
+	Version             string               `sql:"version" json:"version,omitempty"`
+	Name                string               `sql:"name" json:"name,omitempty"`
+	Guid                string               `sql:"guid" json:"guid,omitempty"`
+	DateAdded           int64                `sql:"date_added" json:"date_added,omitempty"`
+	DateModified        int64                `sql:"date_modified" json:"date_modified,omitempty"`
+	DateAddedContent    int64                `sql:"date_added_content" json:"date_added_content,omitempty"`
+	DateModifiedContent int64                `sql:"date_modified_content" json:"date_modified_content,omitempty"`
+	DateLastUsedContent int64                `sql:"date_last_used_content" json:"date_last_used_content,omitempty"`
+	Icon                string               `sql:"icon" json:"icon,omitempty"`
+	Desc                string               `sql:"desc" json:"desc,omitempty"`
+	Tags                []string             `sql:"-" json:"tags,omitempty"`
+	Children            []Bookmark           `sql:"-" json:"children,omitempty"`
+	Subfolders          []BookmarkCollection `sql:"-" json:"subfolders,omitempty"`
 }
 
 // NewBookmark creates a new Bookmark struct from a URL, extracting a suitable name and
