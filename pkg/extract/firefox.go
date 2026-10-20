@@ -1,7 +1,9 @@
-package pkg
+package extract
 
 import (
 	"encoding/json/v2"
+	"errors"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -28,11 +30,9 @@ type FirefoxBookmark struct {
 
 // decompressFirefoxBookmarks executes the `dejsonlz4` programme to decompress a
 // `.jsonlz4` file (Firefox's slightly-unique compression file-type) into `.json`.
-func decompressFirefoxBookmarks(inputJSONlz4 string, outputJSON string) {
-	err := exec.Command("./dejsonlz4/dejsonlz4", inputJSONlz4, outputJSON).Run()
-	if err != nil {
-		log.Fatal(err)
-	}
+func decompressFirefoxBookmarks(inputJSONlz4 string, outputJSON string) error {
+	return exec.Command("./dejsonlz4/dejsonlz4", inputJSONlz4, outputJSON).Run()
+
 }
 
 // findFirefoxBookmarkFile searches the expected configuration directory for the
@@ -80,36 +80,36 @@ func findFirefoxBookmarkFile() string {
 	return ""
 }
 
-// extractFirefoxBookmarksFrom extracts a (collection of) FirefoxBookmark from
+// ExtractFirefoxBookmarksFrom extracts a (collection of) FirefoxBookmark from
 // a particular Firefox backup bookmark file.
 // If it is compressed (i.e. .jsonlz4) it will automatically be decompressed.
-func extractFirefoxBookmarksFrom(bookmarkFile string) *FirefoxBookmark {
+func ExtractFirefoxBookmarksFrom(bookmarkFile string) (bookmarks *FirefoxBookmark, err error) {
 	if strings.HasSuffix(bookmarkFile, ".jsonlz4") {
 		compressed := bookmarkFile
 		bookmarkFile = filepath.Join(os.TempDir(), uuid.New().String())
-		decompressFirefoxBookmarks(compressed, bookmarkFile)
+		err = decompressFirefoxBookmarks(compressed, bookmarkFile)
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	f, err := os.OpenFile(bookmarkFile, os.O_RDONLY, 0666)
 	if err != nil {
-		log.Fatal("Error opening the extracted bookmark file:", err)
+		return nil, errors.New(fmt.Sprintf("error opening the extracted bookmark file:\n%s", err))
 	}
 	defer func(f *os.File) {
 		_ = f.Close()
 	}(f)
 
-	bm := new(FirefoxBookmark)
-	err = json.UnmarshalRead(f, bm)
-	if err != nil {
-		log.Fatal("Error unmarshalling the bookmark file into a Go struct:", err)
-	}
-	return bm
+	bookmarks = new(FirefoxBookmark)
+	err = json.UnmarshalRead(f, bookmarks)
+	return bookmarks, err
 }
 
-// extractFirefoxBookmarks extracts all the bookmarks from Firefox, automatically
+// ExtractFirefoxBookmarks extracts all the bookmarks from Firefox, automatically
 // locating the right backup bookmark file.
-// See also extractFirefoxBookmarksFrom
-func extractFirefoxBookmarks() *FirefoxBookmark {
+// See also ExtractFirefoxBookmarksFrom
+func ExtractFirefoxBookmarks() (*FirefoxBookmark, error) {
 	bookmarkFile := findFirefoxBookmarkFile()
-	return extractFirefoxBookmarksFrom(bookmarkFile)
+	return ExtractFirefoxBookmarksFrom(bookmarkFile)
 }

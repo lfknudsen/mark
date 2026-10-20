@@ -1,4 +1,4 @@
-package pkg
+package extract
 
 import (
 	"encoding/json/v2"
@@ -93,27 +93,24 @@ func findChromiumBookmarkFile(browser string, profile string) string {
 	return filepath.Join(configDirRoot, softwareDir, "User Data", profile, "Bookmarks")
 }
 
-// extractChromiumBookmarksFrom extracts an ChromiumBookmarkCollection from
+// ExtractChromiumBookmarksFrom extracts an ChromiumBookmarkCollection from
 // a particular Chromium backup bookmark file (these are always named simply "Bookmarks",
 // but are actually JSON files).
-func extractChromiumBookmarksFrom(bookmarkFile string) *ChromiumBookmarkCollection {
+func ExtractChromiumBookmarksFrom(bookmarkFile string) (bookmarks *ChromiumBookmarkCollection, err error) {
 	f, err := os.OpenFile(bookmarkFile, os.O_RDONLY, 0666)
 	if err != nil {
-		log.Fatal("Error opening the extracted bookmark file:", err)
+		return nil, err
 	}
 	defer func(f *os.File) {
-		_ = f.Close()
+		err = f.Close()
 	}(f)
 
 	bm := new(ChromiumBookmarkCollection)
 	err = json.UnmarshalRead(f, bm)
-	if err != nil {
-		log.Fatal("Error unmarshalling the bookmark file into a Go struct:", err)
-	}
-	return bm
+	return bm, err
 }
 
-// extractChromiumBookmarks extracts all the bookmarks from a Chromium browser,
+// ExtractChromiumBookmarks extracts all the bookmarks from a Chromium browser,
 // automatically locating the right backup bookmark file.
 //
 // `browser` must be one of Browsers.
@@ -121,16 +118,16 @@ func extractChromiumBookmarksFrom(bookmarkFile string) *ChromiumBookmarkCollecti
 // `profile` is the name of the profile whose bookmarks you wish to extract.
 // If you only have one profile, try "Default".
 //
-// See also extractChromiumBookmarksFrom
-func extractChromiumBookmarks(browser string, profile string) *ChromiumBookmarkCollection {
+// See also ExtractChromiumBookmarksFrom
+func ExtractChromiumBookmarks(browser string, profile string) (*ChromiumBookmarkCollection, error) {
 	if profile == "" {
 		profile = "Default"
 	}
 	bookmarkFile := findChromiumBookmarkFile(browser, profile)
-	return extractChromiumBookmarksFrom(bookmarkFile)
+	return ExtractChromiumBookmarksFrom(bookmarkFile)
 }
 
-func extractChromiumBookmarksDefault(browser string) *ChromiumBookmarkCollection {
+func extractChromiumBookmarksDefault(browser string) (*ChromiumBookmarkCollection, error) {
 	bookmarkFile := findChromiumBookmarkFile(browser, "Default")
-	return extractChromiumBookmarksFrom(bookmarkFile)
+	return ExtractChromiumBookmarksFrom(bookmarkFile)
 }

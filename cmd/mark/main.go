@@ -35,7 +35,10 @@ func main() {
 	}
 
 	if args[0] == ImportCommand {
-		imported := ParseExtractCommand(args[1:])
+		imported, err := ParseExtractCommand(args[1:])
+		if err != nil {
+			log.Fatal(err)
+		}
 		fmt.Print("Inserting")
 		wg := new(sync.WaitGroup)
 		var rows int64
