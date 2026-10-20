@@ -10,5 +10,5 @@ import "mark/graph/model"
 // here.
 
 type Resolver struct {
-	todos []*model.Todo
+	bookmarks []*model.Bookmark
 }

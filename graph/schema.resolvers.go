@@ -7,32 +7,34 @@ package graph
 
 import (
 	"context"
-	"crypto/rand"
 	"fmt"
 	"mark/graph/model"
-	"math/big"
+	. "mark/pkg"
 )
 
-// CreateTodo is the resolver for the createTodo field.
-func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) (*model.Todo, error) {
-	randNumber, _ := rand.Int(rand.Reader, big.NewInt(100))
-	todo := &model.Todo{
-		Text: input.Text,
-		ID:   fmt.Sprintf("T%d", randNumber.Int64()),
-		User: &model.User{ID: input.UserID, Name: "user " + input.UserID},
+// CreateBookmark is the resolver for the createBookmark field.
+func (r *mutationResolver) CreateBookmark(ctx context.Context, input model.NewBookmark) (*model.Bookmark, error) {
+	bookmark := NewBookmark(input.URL)
+	if input.Name != nil {
+		bookmark.Name = *input.Name
 	}
-	r.todos = append(r.todos, todo)
-	return todo, nil
+	if input.Desc != nil {
+		bookmark.Desc = *input.Desc
+	}
+	_, err := Insert(bookmark)
+	output := &model.Bookmark{}
+	err = Convert(&bookmark, output)
+	return output, err
 }
 
-// Todos is the resolver for the todos field.
-func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
-	return r.todos, nil
+// CreateFolder is the resolver for the createFolder field.
+func (r *mutationResolver) CreateFolder(ctx context.Context, input model.NewFolder) (*model.Folder, error) {
+	panic(fmt.Errorf("not implemented: CreateFolder - createFolder"))
 }
 
-// User is the resolver for the user field.
-func (r *todoResolver) User(ctx context.Context, obj *model.Todo) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: User - user"))
+// Bookmarks is the resolver for the bookmarks field.
+func (r *queryResolver) Bookmarks(ctx context.Context, folder string) ([]*model.Bookmark, error) {
+	return r.bookmarks, nil
 }
 
 // Mutation returns MutationResolver implementation.
@@ -41,11 +43,7 @@ func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
-// Todo returns TodoResolver implementation.
-func (r *Resolver) Todo() TodoResolver { return &todoResolver{r} }
-
 type (
 	mutationResolver struct{ *Resolver }
 	queryResolver    struct{ *Resolver }
-	todoResolver     struct{ *Resolver }
 )
