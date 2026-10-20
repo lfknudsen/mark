@@ -44,6 +44,9 @@ func main() {
 		lines = append(lines, strings.Join(fields, "\t"))
 		for _, bookmark := range bookmarks {
 			values := bookmark.getValues()
+			values[1] = capStringLength(values[1])
+			values[2] = capStringLength(values[2])
+			values[3] = capStringLength(values[3])
 			lines = append(lines, strings.Join(values, "\t"))
 		}
 		fmt.Println("Found", len(bookmarks), "bookmarks:")
@@ -93,4 +96,11 @@ func createJsonBookmarks(bookmarks ...Bookmark) {
 		}
 		_ = f.Close()
 	}
+}
+
+func capStringLength(str string) string {
+	if len(str) > 33 {
+		str = str[:30] + "..."
+	}
+	return str
 }
