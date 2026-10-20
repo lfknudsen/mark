@@ -18,15 +18,14 @@ func main() {
 		fmt.Print(HELP)
 		os.Exit(0)
 	}
+
+	err := initDatabase()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	if args[0] == importCommand {
 		parseExtractCommand(args[1:])
-		return
-	}
-	if args[0] == connectCommand {
-		err := connect()
-		if err != nil {
-			log.Fatal(err)
-		}
 		return
 	}
 
@@ -57,10 +56,11 @@ func main() {
 	for _, arg := range args {
 		bookmarks = append(bookmarks, NewBookmark(arg))
 	}
-	err := insert(bookmarks...)
+	rows, err := insert(bookmarks...)
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println(rows, "rows affected in total.")
 }
 
 func createJsonBookmarks(bookmarks ...Bookmark) {
