@@ -1,9 +1,12 @@
 package main
 
 import (
+	"encoding/json/v2"
 	"fmt"
 	"log"
+	"os"
 	"path"
+	"path/filepath"
 	"reflect"
 	"time"
 	"uuid"
@@ -56,19 +59,19 @@ func (b Bookmark) String() string {
 }
 
 type BookmarkCollection struct {
-	Version             string               `sql:"version" json:"version,omitempty"`
-	Name                string               `sql:"name" json:"name,omitempty"`
-	Guid                string               `sql:"guid" json:"guid,omitempty"`
-	DateAdded           int64                `sql:"date_added" json:"date_added,omitempty"`
-	DateModified        int64                `sql:"date_modified" json:"date_modified,omitempty"`
-	DateAddedContent    int64                `sql:"date_added_content" json:"date_added_content,omitempty"`
-	DateModifiedContent int64                `sql:"date_modified_content" json:"date_modified_content,omitempty"`
-	DateLastUsedContent int64                `sql:"date_last_used_content" json:"date_last_used_content,omitempty"`
-	Icon                string               `sql:"icon" json:"icon,omitempty"`
-	Desc                string               `sql:"desc" json:"desc,omitempty"`
-	Tags                []string             `sql:"-" json:"tags,omitempty"`
-	Children            []Bookmark           `sql:"-" json:"children,omitempty"`
-	Subfolders          []BookmarkCollection `sql:"-" json:"subfolders,omitempty"`
+	Version             string                `sql:"version" json:"version,omitempty"`
+	Name                string                `sql:"name" json:"name,omitempty"`
+	Guid                string                `sql:"guid" json:"guid,omitempty"`
+	DateAdded           int64                 `sql:"date_added" json:"date_added,omitempty"`
+	DateModified        int64                 `sql:"date_modified" json:"date_modified,omitempty"`
+	DateAddedContent    int64                 `sql:"date_added_content" json:"date_added_content,omitempty"`
+	DateModifiedContent int64                 `sql:"date_modified_content" json:"date_modified_content,omitempty"`
+	DateLastUsedContent int64                 `sql:"date_last_used_content" json:"date_last_used_content,omitempty"`
+	Icon                string                `sql:"icon" json:"icon,omitempty"`
+	Desc                string                `sql:"desc" json:"desc,omitempty"`
+	Tags                []string              `sql:"-" json:"tags,omitempty"`
+	Children            []Bookmark            `sql:"-" json:"children,omitempty"`
+	Subfolders          []*BookmarkCollection `sql:"-" json:"subfolders,omitempty"`
 }
 
 // NewBookmark creates a new Bookmark struct from a URL, extracting a suitable name and
@@ -142,9 +145,9 @@ func BookmarkCollectionFromChromium(cb *ChromiumBookmark) *BookmarkCollection {
 	for _, url := range urls {
 		out.Children = append(out.Children, BookmarkFromChromium(&url))
 	}
-	out.Subfolders = make([]BookmarkCollection, 0, len(folders))
+	out.Subfolders = make([]*BookmarkCollection, 0, len(folders))
 	for _, folder := range folders {
-		out.Subfolders = append(out.Subfolders, *BookmarkCollectionFromChromium(&folder))
+		out.Subfolders = append(out.Subfolders, BookmarkCollectionFromChromium(&folder))
 	}
 	return &out
 }
@@ -161,11 +164,11 @@ func BookmarkCollectionFromChromiumCollection(cb *ChromiumBookmarkCollection) *B
 		Desc:         "",
 		Tags:         []string{},
 		Children:     []Bookmark{},
-		Subfolders:   make([]BookmarkCollection, 0, 3),
+		Subfolders:   make([]*BookmarkCollection, 0, 3),
 	}
-	out.Subfolders = append(out.Subfolders, *BookmarkCollectionFromChromium(&cb.Roots.BookmarkBar))
-	out.Subfolders = append(out.Subfolders, *BookmarkCollectionFromChromium(&cb.Roots.Other))
-	out.Subfolders = append(out.Subfolders, *BookmarkCollectionFromChromium(&cb.Roots.Synced))
+	out.Subfolders = append(out.Subfolders, BookmarkCollectionFromChromium(&cb.Roots.BookmarkBar))
+	out.Subfolders = append(out.Subfolders, BookmarkCollectionFromChromium(&cb.Roots.Other))
+	out.Subfolders = append(out.Subfolders, BookmarkCollectionFromChromium(&cb.Roots.Synced))
 	return &out
 }
 
@@ -199,7 +202,7 @@ func BookmarkCollectionFromFirefox(ff *FirefoxBookmark) *BookmarkCollection {
 		Desc:                "",
 		Tags:                []string{},
 		Children:            []Bookmark{},
-		Subfolders:          []BookmarkCollection{},
+		Subfolders:          []*BookmarkCollection{},
 	}
 
 	if len(ff.Children) > 0 {
@@ -207,7 +210,7 @@ func BookmarkCollectionFromFirefox(ff *FirefoxBookmark) *BookmarkCollection {
 			if len(child.Children) == 0 {
 				out.Children = append(out.Children, BookmarkFromFirefox(&child))
 			} else {
-				out.Subfolders = append(out.Subfolders, *BookmarkCollectionFromFirefox(&child))
+				out.Subfolders = append(out.Subfolders, BookmarkCollectionFromFirefox(&child))
 			}
 		}
 	}

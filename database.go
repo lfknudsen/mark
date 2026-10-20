@@ -9,12 +9,22 @@ import (
 	"modernc.org/sqlite"
 )
 
-const connectCommand = "connect"
 const connectionString = "file:data/mark.db"
 
 const insertStatement = `INSERT INTO bookmarks
     (version, url, name, desc, date_added, date_modified, date_last_used, guid, icon) 
 	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ? )`
+const insertCollectionStatement = `INSERT INTO folders
+    (version, name, desc, date_added, date_modified, date_last_used, guid, icon) 
+	VALUES (?, ?, ?, ?, ?, ?, ?, ? )`
+
+const insertSubfolderRelationStatement = `INSERT INTO subfolder_relations
+    (parent, child)
+    VALUES (?, ?)`
+
+const insertChildRelationStatement = `INSERT INTO child_relations
+    (parent, child)
+    VALUES (?, ?)`
 
 func closeDB(db *sql.DB) {
 	if db != nil {
@@ -31,8 +41,8 @@ func abort(transaction *sql.Tx) {
 	}
 }
 
-// connect connects to the bookmark database.
-func connect() error {
+// initDatabase initialises the tables in the bookmark database.
+func initDatabase() error {
 	db, err := openDB()
 	if err != nil {
 		return err
@@ -42,11 +52,17 @@ func connect() error {
 	if err != nil {
 		return err
 	}
+	defer rollback(tran)
 	data, err := os.ReadFile("model.sql")
 	if err != nil {
 		return err
 	}
-	res, err := tran.Exec(string(data))
+	stmn, err := tran.Prepare(string(data))
+	if err != nil {
+		return err
+	}
+	defer closeStmt(stmn)
+	res, err := stmn.Exec()
 	if err != nil {
 		return err
 	}
@@ -71,20 +87,20 @@ func openDB() (*sql.DB, error) {
 	return db, db.Ping()
 }
 
-func insert(bookmarks ...Bookmark) error {
+func insert(bookmarks ...Bookmark) (rowsAffected int64, err error) {
 	db, err := openDB()
 	if err != nil {
-		return err
+		return rowsAffected, err
 	}
 	defer closeDB(db)
 	tx, err := db.Begin()
 	if err != nil {
-		return err
+		return rowsAffected, err
 	}
 	stmnt, err := tx.Prepare(insertStatement)
 	if err != nil {
 		_ = tx.Rollback()
-		return err
+		return rowsAffected, err
 	}
 	defer closeStmt(stmnt)
 	for _, b := range bookmarks {
@@ -92,16 +108,16 @@ func insert(bookmarks ...Bookmark) error {
 			b.DateModified, b.DateLastUsed, b.Guid, b.Icon)
 		if err != nil {
 			_ = tx.Rollback()
-			return err
+			return rowsAffected, err
 		}
-		rowsAffected, err := res.RowsAffected()
+		affected, err := res.RowsAffected()
+		rowsAffected += affected
 		if err != nil {
 			_ = tx.Rollback()
-			return err
+			return rowsAffected, err
 		}
-		fmt.Printf("%d rows were affected by inserting %s.\n", rowsAffected, b.Url)
 	}
-	return tx.Commit()
+	return rowsAffected, tx.Commit()
 }
 
 func closeStmt(stmnt *sql.Stmt) {
@@ -145,4 +161,127 @@ func closeResult(transaction *sql.Rows) {
 	if transaction != nil {
 		_ = transaction.Close()
 	}
+}
+
+func insertCollection(collections ...*BookmarkCollection) (rowsAffected int64, err error) {
+	db, err := openDB()
+	if err != nil {
+		return rowsAffected, err
+	}
+	defer closeDB(db)
+	tx, err := db.Begin()
+	if err != nil {
+		return rowsAffected, err
+	}
+	stmnt, err := tx.Prepare(insertCollectionStatement)
+	if err != nil {
+		_ = tx.Rollback()
+		return rowsAffected, err
+	}
+	defer closeStmt(stmnt)
+	for _, c := range collections {
+		res, err := stmnt.Exec(c.Version, c.Name, c.Desc, c.DateAdded,
+			c.DateModified, c.DateLastUsedContent, c.Guid, c.Icon)
+		if err != nil {
+			_ = tx.Rollback()
+			return rowsAffected, err
+		}
+		rowsAffected, err = res.RowsAffected()
+		if err != nil {
+			_ = tx.Rollback()
+			return rowsAffected, err
+		}
+	}
+	err = tx.Commit()
+	if err != nil {
+		return rowsAffected, err
+	}
+	closeStmt(stmnt)
+	for _, c := range collections {
+		affected, err := insertCollection(c.Subfolders...)
+		rowsAffected += affected
+		if err != nil {
+			return rowsAffected, err
+		}
+		for _, sub := range c.Subfolders {
+			affected, err = setSubfolder(c, sub)
+			rowsAffected += affected
+			if err != nil {
+				return rowsAffected, err
+			}
+		}
+		affected, err = insert(c.Children...)
+		rowsAffected += affected
+		if err != nil {
+			return rowsAffected, err
+		}
+		for _, child := range c.Children {
+			affected, err = setChild(c, &child)
+			rowsAffected += affected
+			if err != nil {
+				return rowsAffected, err
+			}
+		}
+	}
+	return rowsAffected, nil
+}
+
+func setSubfolder(parent *BookmarkCollection, child *BookmarkCollection) (rowsAffected int64, err error) {
+	db, err := openDB()
+	if err != nil {
+		return rowsAffected, err
+	}
+	defer closeDB(db)
+	tx, err := db.Begin()
+	if err != nil {
+		return rowsAffected, err
+	}
+	stmnt, err := tx.Prepare(insertSubfolderRelationStatement)
+	if err != nil {
+		_ = tx.Rollback()
+		return rowsAffected, err
+	}
+	defer closeStmt(stmnt)
+	res, err := stmnt.Exec(parent.Guid, child.Guid)
+	if err != nil {
+		_ = tx.Rollback()
+		return rowsAffected, err
+	}
+	affected, err := res.RowsAffected()
+	rowsAffected += affected
+	if err != nil {
+		_ = tx.Rollback()
+		return rowsAffected, err
+	}
+	return rowsAffected, tx.Commit()
+}
+
+func setChild(parent *BookmarkCollection, child *Bookmark) (rowsAffected int64, err error) {
+	db, err := openDB()
+	if err != nil {
+		return rowsAffected, err
+	}
+	defer closeDB(db)
+	tx, err := db.Begin()
+	if err != nil {
+		return rowsAffected, err
+	}
+	stmnt, err := tx.Prepare(insertChildRelationStatement)
+	if err != nil {
+		_ = tx.Rollback()
+		return rowsAffected, err
+	}
+	defer closeStmt(stmnt)
+	res, err := stmnt.Exec(parent.Guid, child.Guid)
+	if err != nil {
+		_ = tx.Rollback()
+		return rowsAffected, err
+	}
+	affected, err := res.RowsAffected()
+	rowsAffected += affected
+	if err != nil {
+		_ = tx.Rollback()
+		return rowsAffected, err
+	}
+	return rowsAffected, tx.Commit()
 }
