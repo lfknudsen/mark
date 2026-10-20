@@ -25,6 +25,13 @@ func main() {
 	for _, arg := range args {
 		bookmarks = append(bookmarks, NewBookmark(arg))
 	}
+	err := insert(bookmarks...)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func createJsonBookmarks(bookmarks ...Bookmark) {
 	err := os.MkdirAll(dir, os.ModePerm)
 	if err != nil {
 		log.Fatal(err)
