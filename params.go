@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -16,10 +17,16 @@ const profileShorthand = "-p"
 const profileLongform = "--profile"
 const defaultProfileName = "Default"
 
+var port = flag.Uint("port", 8081, "Port to listen on")
+
 var HELP = "Mark v" + VERSION +
 	"\nUsage:\n" +
 	"  $ mark <URLs...>\n" +
-	"  $ mark connect\n" +
+	"                 Add <URL(s)> to your bookmarks.\n" +
+	"  $ mark list\n" +
+	"                 Print all database entries to standard output.\n" +
+	"  $ mark [-port <number>] server\n" +
+	"                 Start the GraphQL server." +
 	fmt.Sprintf("  $ mark %s (%s|%s) <browser name> [Options]\n", importCommand, browserShorthand, browserLongform) +
 	"Extract options:\n" +
 	fmt.Sprintf("%s <file>\n%s <file>\t\t\tImport from a specific bookmark file\n", fileLongform, fileShorthand) +
