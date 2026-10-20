@@ -223,6 +223,8 @@ func insertCollection(collections ...*BookmarkCollection) (rowsAffected int64, e
 			}
 		}
 	}
+	fmt.Print(".")
+
 	return rowsAffected, nil
 }
 

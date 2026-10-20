@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"text/tabwriter"
 )
 
@@ -26,7 +27,13 @@ func main() {
 
 	if args[0] == importCommand {
 		imported := parseExtractCommand(args[1:])
-		rows, err := insertCollection(imported)
+		fmt.Print("Inserting")
+		wg := new(sync.WaitGroup)
+		var rows int64
+		wg.Go(
+			func() { rows, err = insertCollection(imported) },
+		)
+		wg.Wait()
 		if err != nil {
 			log.Fatal(err)
 		}
