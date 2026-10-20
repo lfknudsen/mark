@@ -7,7 +7,6 @@ import (
 	"strings"
 )
 
-const programmeVersion = "0.0.1"
 const importCommand = "extract"
 const fileShorthand = "-f"
 const fileLongform = "--file"
@@ -17,7 +16,7 @@ const profileShorthand = "-p"
 const profileLongform = "--profile"
 const defaultProfileName = "Default"
 
-var HELP = "Mark v" + programmeVersion +
+var HELP = "Mark v" + VERSION +
 	"\nUsage:\n" +
 	"  $ mark <URLs...>\n" +
 	"  $ mark connect\n" +

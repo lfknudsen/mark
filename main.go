@@ -11,7 +11,19 @@ import (
 	"text/tabwriter"
 )
 
-var dir = "data"
+func getExecPath() string {
+	p, err := os.Executable()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return filepath.Dir(p)
+}
+
+const VERSION = "0.8.0"
+
+var execPath = getExecPath()
+var markDir = filepath.Join(execPath, ".mark")
+var dataDir = filepath.Join(markDir, ".data")
 
 func main() {
 	args := os.Args[1:]
@@ -20,6 +32,7 @@ func main() {
 		os.Exit(0)
 	}
 
+	initDirectories()
 	err := initDatabase()
 	if err != nil {
 		log.Fatal(err)
@@ -79,7 +92,7 @@ func main() {
 }
 
 func createJsonBookmarks(bookmarks ...Bookmark) {
-	err := os.MkdirAll(dir, os.ModePerm)
+	err := os.MkdirAll(dataDir, os.ModePerm)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -88,12 +101,12 @@ func createJsonBookmarks(bookmarks ...Bookmark) {
 		if err != nil {
 			log.Println(err)
 		}
-		filename := filepath.Join(dir, fmt.Sprintf("%s.json", mark.Name))
+		filename := filepath.Join(dataDir, fmt.Sprintf("%s.json", mark.Name))
 		f, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_EXCL, os.ModePerm)
 		if err != nil {
 			i := 1
 			for err != nil {
-				filename = filepath.Join(dir, fmt.Sprintf("%s (%d).json", mark.Name, i))
+				filename = filepath.Join(dataDir, fmt.Sprintf("%s (%d).json", mark.Name, i))
 				f, err = os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_EXCL, os.ModePerm)
 			}
 		}
@@ -110,4 +123,11 @@ func capStringLength(str string) string {
 		str = str[:30] + "..."
 	}
 	return str
+}
+
+func initDirectories() {
+	err := os.MkdirAll(dataDir, os.ModePerm)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

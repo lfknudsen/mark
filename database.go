@@ -9,7 +9,7 @@ import (
 	"modernc.org/sqlite"
 )
 
-const connectionString = "file:data/mark.db"
+var connectionString = fmt.Sprintf("file:%s/mark.db", markDir)
 
 const insertStatement = `INSERT INTO bookmarks
     (version, url, name, desc, date_added, date_modified, date_last_used, guid, icon) 
