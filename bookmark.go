@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"path"
+	"reflect"
 	"time"
 	"uuid"
 )
@@ -21,6 +23,36 @@ type Bookmark struct {
 	Guid         string   `sql:"guid" json:"guid,omitempty"`
 	Icon         string   `sql:"icon" json:"icon,omitempty"`
 	Tags         []string `sql:"-" json:"tags,omitempty"`
+}
+
+func getBookmarkFieldNames() []string {
+	fields := reflect.VisibleFields(reflect.TypeFor[Bookmark]())
+	exportedFields := make([]string, 0, len(fields))
+	for _, field := range fields {
+		tag := field.Tag.Get("sql")
+		if tag != "-" {
+			exportedFields = append(exportedFields, tag)
+		}
+	}
+	return exportedFields
+}
+
+func (b Bookmark) getValues() []string {
+	v := reflect.ValueOf(b)
+	fields := reflect.VisibleFields(reflect.TypeFor[Bookmark]())
+	output := make([]string, 0, len(fields))
+	for _, field := range fields {
+		tag := field.Tag.Get("sql")
+		if tag != "-" {
+			output = append(output, fmt.Sprint(v.FieldByName(field.Name)))
+		}
+	}
+	return output
+}
+
+func (b Bookmark) String() string {
+	return fmt.Sprintf("(%s, %s, %s, %s, %d, %d, %d, %s, %s)",
+		b.Version, b.Url, b.Name, b.Desc, b.DateAdded, b.DateModified, b.DateLastUsed, b.Guid, b.Icon)
 }
 
 type BookmarkCollection struct {
