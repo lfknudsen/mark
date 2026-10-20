@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
+	"text/tabwriter"
 )
 
 var dir = "data"
@@ -19,6 +21,36 @@ func main() {
 	if args[0] == importCommand {
 		parseExtractCommand(args[1:])
 		return
+	}
+	if args[0] == connectCommand {
+		err := connect()
+		if err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+
+	if args[0] == "list" {
+		bookmarks, err := listBookmarks()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fields := getBookmarkFieldNames()
+		lines := make([]string, 0, len(bookmarks)+1)
+		lines = append(lines, strings.Join(fields, "\t"))
+		for _, bookmark := range bookmarks {
+			values := bookmark.getValues()
+			lines = append(lines, strings.Join(values, "\t"))
+		}
+		fmt.Println("Found", len(bookmarks), "bookmarks:")
+		text := strings.Join(lines, "\n")
+		tabWriter := tabwriter.NewWriter(os.Stdout, 3, 1, 3, ' ', 0)
+		_, err = fmt.Fprintln(tabWriter, text)
+		if err != nil {
+			log.Fatal(err)
+		}
+		_ = tabWriter.Flush()
+		os.Exit(0)
 	}
 
 	bookmarks := make([]Bookmark, 0, len(args))
