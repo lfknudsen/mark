@@ -42,7 +42,7 @@ func findFirefoxBookmarkFile() string {
 	if err != nil {
 		configDir = "."
 	} else {
-		configDir = filepath.Join(configDir, "Roaming", "Mozilla", "Firefox", "Profiles")
+		configDir = filepath.Join(configDir, "Mozilla", "Firefox", "Profiles")
 		profiles, err := os.ReadDir(configDir)
 		if err != nil {
 			log.Fatal(err)
