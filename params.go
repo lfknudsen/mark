@@ -27,7 +27,7 @@ var HELP = "Mark v" + programmeVersion +
 	"\n" +
 	fmt.Sprintf("%s <profile name>\n%s <profile name>\t\tImport from this profile. If unsure, or on Edge with a Microsoft account, leave blank.", profileLongform, profileShorthand)
 
-func parseExtractCommand(args []string) {
+func parseExtractCommand(args []string) *BookmarkCollection {
 	file := ""
 	browser := ""
 	profile := defaultProfileName
@@ -50,25 +50,32 @@ func parseExtractCommand(args []string) {
 		}
 		args = args[2:]
 	}
+	var bookmarks *BookmarkCollection
 	if file != "" {
 		if browser == "" {
 			log.Fatal("Please specify a browser name.")
 		}
 		switch strings.ToLower(browser) {
 		case "edge", "brave", "chrome", "chromium":
-			extractChromiumBookmarksFrom(file)
+			imported := extractChromiumBookmarksFrom(file)
+			bookmarks = BookmarkCollectionFromChromiumCollection(imported)
 		case "firefox":
-			extractFirefoxBookmarksFrom(file)
+			imported := extractFirefoxBookmarksFrom(file)
+			bookmarks = BookmarkCollectionFromFirefox(imported)
+		default:
+			log.Fatal("Did not recognise the browser name.")
 		}
-		return
-	}
-	if browser != "" {
+	} else if browser != "" {
 		switch strings.ToLower(browser) {
 		case "edge", "brave", "chrome", "chromium":
-			extractChromiumBookmarks(browser, profile)
+			imported := extractChromiumBookmarks(browser, profile)
+			bookmarks = BookmarkCollectionFromChromiumCollection(imported)
 		case "firefox":
-			extractFirefoxBookmarks()
+			imported := extractFirefoxBookmarks()
+			bookmarks = BookmarkCollectionFromFirefox(imported)
+		default:
+			log.Fatal("Did not recognise the browser name.")
 		}
-		return
 	}
+	return bookmarks
 }

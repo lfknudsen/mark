@@ -25,7 +25,12 @@ func main() {
 	}
 
 	if args[0] == importCommand {
-		parseExtractCommand(args[1:])
+		imported := parseExtractCommand(args[1:])
+		rows, err := insertCollection(imported)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(rows, "rows affected in total.")
 		return
 	}
 
