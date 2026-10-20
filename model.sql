@@ -55,3 +55,17 @@ CREATE TABLE IF NOT EXISTS tag_folder_relations
     tag REFERENCES tags (name),
     PRIMARY KEY (folder, tag)
 );
+
+CREATE TABLE IF NOT EXISTS subfolder_relations
+(
+    parent REFERENCES folders (guid),
+    child REFERENCES folders (guid),
+    PRIMARY KEY (parent, child)
+);
+
+CREATE TABLE IF NOT EXISTS child_relations
+(
+    parent REFERENCES folders (guid),
+    child REFERENCES bookmarks (guid),
+    PRIMARY KEY (parent, child)
+);
