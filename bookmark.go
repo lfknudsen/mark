@@ -213,3 +213,21 @@ func BookmarkCollectionFromFirefox(ff *FirefoxBookmark) *BookmarkCollection {
 	}
 	return &out
 }
+
+func (c *BookmarkCollection) SaveAsJSON(outputFile string) error {
+	// Write to a new JSON file.
+	err := os.MkdirAll(filepath.Dir(outputFile), os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	out, err := os.OpenFile(outputFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+	if err != nil {
+		return err
+	}
+	defer func(out *os.File) {
+		_ = out.Close()
+	}(out)
+
+	return json.MarshalWrite(out, c)
+}

@@ -103,26 +103,6 @@ func extractFirefoxBookmarksFrom(bookmarkFile string) *FirefoxBookmark {
 	if err != nil {
 		log.Fatal("Error unmarshalling the bookmark file into a Go struct:", err)
 	}
-
-	// Write to a new JSON file.
-	// TODO: Do something useful here instead of proving extraction works.
-	err = os.MkdirAll("data/firefox", os.ModePerm)
-	if err != nil {
-		log.Fatal("Error creating directories for the bookmark file:", err)
-	}
-
-	out, err := os.OpenFile("./data/firefox/bookmarks.json", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
-	if err != nil {
-		log.Fatal("Error while creating bookmark file:", err)
-	}
-	defer func(out *os.File) {
-		_ = out.Close()
-	}(out)
-
-	err = json.MarshalWrite(out, bm)
-	if err != nil {
-		log.Fatal("Error marshalling new bookmark file:", err)
-	}
 	return bm
 }
 
