@@ -1,4 +1,4 @@
-package main
+package pkg
 
 import (
 	"database/sql"
@@ -41,8 +41,8 @@ func abort(transaction *sql.Tx) {
 	}
 }
 
-// initDatabase initialises the tables in the bookmark database.
-func initDatabase() error {
+// InitDatabase initialises the tables in the bookmark database.
+func InitDatabase() error {
 	db, err := openDB()
 	if err != nil {
 		return err
@@ -87,7 +87,7 @@ func openDB() (*sql.DB, error) {
 	return db, db.Ping()
 }
 
-func insert(bookmarks ...Bookmark) (rowsAffected int64, err error) {
+func Insert(bookmarks ...Bookmark) (rowsAffected int64, err error) {
 	db, err := openDB()
 	if err != nil {
 		return rowsAffected, err
@@ -132,7 +132,7 @@ func rollback(transaction *sql.Tx) {
 	}
 }
 
-func listBookmarks() ([]Bookmark, error) {
+func ListBookmarks() ([]Bookmark, error) {
 	output := make([]Bookmark, 0, 10)
 	db, err := openDB()
 	if err != nil {
@@ -163,7 +163,7 @@ func closeResult(transaction *sql.Rows) {
 	}
 }
 
-func insertCollection(collections ...*BookmarkCollection) (rowsAffected int64, err error) {
+func InsertCollection(collections ...*BookmarkCollection) (rowsAffected int64, err error) {
 	db, err := openDB()
 	if err != nil {
 		return rowsAffected, err
@@ -198,7 +198,7 @@ func insertCollection(collections ...*BookmarkCollection) (rowsAffected int64, e
 	}
 	closeStmt(stmnt)
 	for _, c := range collections {
-		affected, err := insertCollection(c.Subfolders...)
+		affected, err := InsertCollection(c.Subfolders...)
 		rowsAffected += affected
 		if err != nil {
 			return rowsAffected, err
@@ -210,7 +210,7 @@ func insertCollection(collections ...*BookmarkCollection) (rowsAffected int64, e
 				return rowsAffected, err
 			}
 		}
-		affected, err = insert(c.Children...)
+		affected, err = Insert(c.Children...)
 		rowsAffected += affected
 		if err != nil {
 			return rowsAffected, err

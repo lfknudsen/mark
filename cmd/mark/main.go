@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"mark/graph"
+	. "mark/pkg"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -20,20 +21,6 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
-func getExecPath() string {
-	p, err := os.Executable()
-	if err != nil {
-		log.Fatal(err)
-	}
-	return filepath.Dir(p)
-}
-
-const VERSION = "0.8.0"
-
-var execPath = getExecPath()
-var markDir = filepath.Join(execPath, ".mark")
-var dataDir = filepath.Join(markDir, ".data")
-
 func main() {
 	args := os.Args[1:]
 	if len(args) == 0 || (len(args) >= 1 && (args[0] == "-h" || args[0] == "--help")) {
@@ -42,18 +29,18 @@ func main() {
 	}
 
 	initDirectories()
-	err := initDatabase()
+	err := InitDatabase()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if args[0] == importCommand {
-		imported := parseExtractCommand(args[1:])
+	if args[0] == ImportCommand {
+		imported := ParseExtractCommand(args[1:])
 		fmt.Print("Inserting")
 		wg := new(sync.WaitGroup)
 		var rows int64
 		wg.Go(
-			func() { rows, err = insertCollection(imported) },
+			func() { rows, err = InsertCollection(imported) },
 		)
 		wg.Wait()
 		if err != nil {
@@ -64,18 +51,18 @@ func main() {
 	}
 
 	if args[0] == "list" {
-		bookmarks, err := listBookmarks()
+		bookmarks, err := ListBookmarks()
 		if err != nil {
 			log.Fatal(err)
 		}
-		fields := getBookmarkFieldNames()
+		fields := GetBookmarkFieldNames()
 		lines := make([]string, 0, len(bookmarks)+1)
 		lines = append(lines, strings.Join(fields, "\t"))
 		for _, bookmark := range bookmarks {
-			values := bookmark.getValues()
-			values[1] = capStringLength(values[1])
-			values[2] = capStringLength(values[2])
-			values[3] = capStringLength(values[3])
+			values := bookmark.GetValues()
+			values[1] = CapLength(values[1], 30)
+			values[2] = CapLength(values[2], 30)
+			values[3] = CapLength(values[3], 30)
 			lines = append(lines, strings.Join(values, "\t"))
 		}
 		fmt.Println("Found", len(bookmarks), "bookmarks:")
@@ -97,7 +84,7 @@ func main() {
 	for _, arg := range args {
 		bookmarks = append(bookmarks, NewBookmark(arg))
 	}
-	rows, err := insert(bookmarks...)
+	rows, err := Insert(bookmarks...)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -105,7 +92,7 @@ func main() {
 }
 
 func createJsonBookmarks(bookmarks ...Bookmark) {
-	err := os.MkdirAll(dataDir, os.ModePerm)
+	err := os.MkdirAll(DataDir, os.ModePerm)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -114,12 +101,12 @@ func createJsonBookmarks(bookmarks ...Bookmark) {
 		if err != nil {
 			log.Println(err)
 		}
-		filename := filepath.Join(dataDir, fmt.Sprintf("%s.json", mark.Name))
+		filename := filepath.Join(DataDir, fmt.Sprintf("%s.json", mark.Name))
 		f, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_EXCL, os.ModePerm)
 		if err != nil {
 			i := 1
 			for err != nil {
-				filename = filepath.Join(dataDir, fmt.Sprintf("%s (%d).json", mark.Name, i))
+				filename = filepath.Join(DataDir, fmt.Sprintf("%s (%d).json", mark.Name, i))
 				f, err = os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_EXCL, os.ModePerm)
 			}
 		}
@@ -139,7 +126,7 @@ func capStringLength(str string) string {
 }
 
 func initDirectories() {
-	err := os.MkdirAll(dataDir, os.ModePerm)
+	err := os.MkdirAll(DataDir, os.ModePerm)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -162,6 +149,6 @@ func startServer() {
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", srv)
 
-	log.Printf("connect to http://localhost:%d/ for GraphQL playground", port)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), nil))
+	log.Printf("connect to http://localhost:%d/ for GraphQL playground", Port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *Port), nil))
 }

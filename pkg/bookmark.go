@@ -1,12 +1,9 @@
-package main
+package pkg
 
 import (
-	"encoding/json/v2"
 	"fmt"
 	"log"
-	"os"
 	"path"
-	"path/filepath"
 	"reflect"
 	"time"
 	"uuid"
@@ -28,7 +25,7 @@ type Bookmark struct {
 	Tags         []string `sql:"-" json:"tags,omitempty"`
 }
 
-func getBookmarkFieldNames() []string {
+func GetBookmarkFieldNames() []string {
 	fields := reflect.VisibleFields(reflect.TypeFor[Bookmark]())
 	exportedFields := make([]string, 0, len(fields))
 	for _, field := range fields {
@@ -40,7 +37,7 @@ func getBookmarkFieldNames() []string {
 	return exportedFields
 }
 
-func (b Bookmark) getValues() []string {
+func (b Bookmark) GetValues() []string {
 	v := reflect.ValueOf(b)
 	fields := reflect.VisibleFields(reflect.TypeFor[Bookmark]())
 	output := make([]string, 0, len(fields))

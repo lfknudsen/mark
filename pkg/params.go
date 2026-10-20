@@ -1,14 +1,15 @@
-package main
+package pkg
 
 import (
 	"flag"
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
-const importCommand = "extract"
+const ImportCommand = "extract"
 const fileShorthand = "-f"
 const fileLongform = "--file"
 const browserShorthand = "-b"
@@ -17,7 +18,20 @@ const profileShorthand = "-p"
 const profileLongform = "--profile"
 const defaultProfileName = "Default"
 
-var port = flag.Uint("port", 8081, "Port to listen on")
+func getExecPath() string {
+	p, err := os.Executable()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return filepath.Dir(p)
+}
+
+const VERSION = "0.8.0"
+
+var execPath = getExecPath()
+var markDir = filepath.Join(execPath, ".mark")
+var DataDir = filepath.Join(markDir, ".data")
+var Port = flag.Uint("port", 8081, "Port to listen on")
 
 var HELP = "Mark v" + VERSION +
 	"\nUsage:\n" +
@@ -27,13 +41,13 @@ var HELP = "Mark v" + VERSION +
 	"                 Print all database entries to standard output.\n" +
 	"  $ mark [-port <number>] server\n" +
 	"                 Start the GraphQL server." +
-	fmt.Sprintf("  $ mark %s (%s|%s) <browser name> [Options]\n", importCommand, browserShorthand, browserLongform) +
+	fmt.Sprintf("  $ mark %s (%s|%s) <browser name> [Options]\n", ImportCommand, browserShorthand, browserLongform) +
 	"Extract options:\n" +
 	fmt.Sprintf("%s <file>\n%s <file>\t\t\tImport from a specific bookmark file\n", fileLongform, fileShorthand) +
 	"\n" +
 	fmt.Sprintf("%s <profile name>\n%s <profile name>\t\tImport from this profile. If unsure, or on Edge with a Microsoft account, leave blank.", profileLongform, profileShorthand)
 
-func parseExtractCommand(args []string) *BookmarkCollection {
+func ParseExtractCommand(args []string) *BookmarkCollection {
 	file := ""
 	browser := ""
 	profile := defaultProfileName
