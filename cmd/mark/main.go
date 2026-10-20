@@ -118,13 +118,6 @@ func createJsonBookmarks(bookmarks ...Bookmark) {
 	}
 }
 
-func capStringLength(str string) string {
-	if len(str) > 33 {
-		str = str[:30] + "..."
-	}
-	return str
-}
-
 func initDirectories() {
 	err := os.MkdirAll(DataDir, os.ModePerm)
 	if err != nil {
