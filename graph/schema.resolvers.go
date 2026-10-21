@@ -11,6 +11,7 @@ import (
 	"log"
 	"mark/graph/model"
 	. "mark/pkg"
+	. "mark/pkg/db"
 )
 
 // Children is the resolver for the children field.
@@ -78,6 +79,21 @@ func (r *mutationResolver) CreateFolder(ctx context.Context, input model.NewFold
 // Bookmarks is the resolver for the bookmarks field.
 func (r *queryResolver) Bookmarks(ctx context.Context, folder string) ([]*model.Bookmark, error) {
 	return r.bookmarks, nil
+}
+
+// Folders is the resolver for the folders field.
+func (r *queryResolver) Folders(ctx context.Context) ([]*model.FlatFolder, error) {
+	dirs, err := GetFoldersFlat()
+	output := make([]*model.FlatFolder, 0, len(dirs))
+	for _, dir := range dirs {
+		out := model.FlatFolder{
+			Name:  dir.Name,
+			Guid:  dir.Guid,
+			Child: dir.Child,
+		}
+		output = append(output, &out)
+	}
+	return output, err
 }
 
 // Folder returns FolderResolver implementation.

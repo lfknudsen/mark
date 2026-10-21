@@ -8,6 +8,7 @@ type Bookmark {
 
 type Query {
   bookmarks(folder: String!): [Bookmark!]!
+  folders: [FlatFolder!]!
 }
 
 interface BookmarkOrFolder {
@@ -33,6 +34,12 @@ type Folder {
   children: [Bookmark]
   subfolders: [Folder]
   desc: String
+}
+
+type FlatFolder {
+  name: String!
+  guid: String!
+  child: String
 }
 
 type Mutation {

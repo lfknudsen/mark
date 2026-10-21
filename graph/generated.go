@@ -43,6 +43,12 @@ type ComplexityRoot struct {
 		Url  func(childComplexity int) int
 	}
 
+	FlatFolder struct {
+		Child func(childComplexity int) int
+		Guid  func(childComplexity int) int
+		Name  func(childComplexity int) int
+	}
+
 	Folder struct {
 		Children   func(childComplexity int) int
 		Desc       func(childComplexity int) int
@@ -57,6 +63,7 @@ type ComplexityRoot struct {
 
 	Query struct {
 		Bookmarks func(childComplexity int, folder string) int
+		Folders   func(childComplexity int) int
 	}
 }
 
@@ -74,6 +81,7 @@ type MutationResolver interface {
 }
 type QueryResolver interface {
 	Bookmarks(ctx context.Context, folder string) ([]*model.Bookmark, error)
+	Folders(ctx context.Context) ([]*model.FlatFolder, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -112,6 +120,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Bookmark.Url(childComplexity), true
+
+	case "FlatFolder.child":
+		if e.ComplexityRoot.FlatFolder.Child == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FlatFolder.Child(childComplexity), true
+	case "FlatFolder.guid":
+		if e.ComplexityRoot.FlatFolder.Guid == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FlatFolder.Guid(childComplexity), true
+	case "FlatFolder.name":
+		if e.ComplexityRoot.FlatFolder.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FlatFolder.Name(childComplexity), true
 
 	case "Folder.children":
 		if e.ComplexityRoot.Folder.Children == nil {
@@ -172,6 +199,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Bookmarks(childComplexity, args["folder"].(string)), true
+	case "Query.folders":
+		if e.ComplexityRoot.Query.Folders == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.Folders(childComplexity), true
 
 	}
 	return 0, false
@@ -289,6 +322,18 @@ func (ec *executionContext) childFields_Bookmark(ctx context.Context, field grap
 		return ec.fieldContext_Bookmark_desc(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Bookmark", field.Name)
+}
+
+func (ec *executionContext) childFields_FlatFolder(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "name":
+		return ec.fieldContext_FlatFolder_name(ctx, field)
+	case "guid":
+		return ec.fieldContext_FlatFolder_guid(ctx, field)
+	case "child":
+		return ec.fieldContext_FlatFolder_child(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FlatFolder", field.Name)
 }
 
 func (ec *executionContext) childFields_Folder(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -606,6 +651,75 @@ func (ec *executionContext) fieldContext_Bookmark_desc(_ context.Context, field 
 	return graphql.NewScalarFieldContext("Bookmark", field, false, false, "String")
 }
 
+func (ec *executionContext) _FlatFolder_name(ctx context.Context, field graphql.CollectedField, obj *model.FlatFolder) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FlatFolder_name(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FlatFolder_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FlatFolder", field, false, false, "String")
+}
+
+func (ec *executionContext) _FlatFolder_guid(ctx context.Context, field graphql.CollectedField, obj *model.FlatFolder) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FlatFolder_guid(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Guid, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FlatFolder_guid(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FlatFolder", field, false, false, "String")
+}
+
+func (ec *executionContext) _FlatFolder_child(ctx context.Context, field graphql.CollectedField, obj *model.FlatFolder) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FlatFolder_child(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Child, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_FlatFolder_child(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FlatFolder", field, false, false, "String")
+}
+
 func (ec *executionContext) _Folder_name(ctx context.Context, field graphql.CollectedField, obj *model.Folder) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -844,6 +958,38 @@ func (ec *executionContext) fieldContext_Query_bookmarks(ctx context.Context, fi
 	if fc.Args, err = ec.field_Query_bookmarks_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_folders(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_folders(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().Folders(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.FlatFolder) graphql.Marshaler {
+			return ec.marshalNFlatFolder2ᚕᚖmarkᚋgraphᚋmodelᚐFlatFolderᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_folders(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_FlatFolder(ctx, field)
+		},
 	}
 	return fc, nil
 }
@@ -2166,6 +2312,49 @@ func (ec *executionContext) _Bookmark(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
+var flatFolderImplementors = []string{"FlatFolder"}
+
+func (ec *executionContext) _FlatFolder(ctx context.Context, sel ast.SelectionSet, obj *model.FlatFolder) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, flatFolderImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := graphql.NewDeferredGroup(ctx)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FlatFolder")
+		case "name":
+			out.Values[i] = ec._FlatFolder_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "guid":
+			out.Values[i] = ec._FlatFolder_guid(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "child":
+			out.Values[i] = ec._FlatFolder_child(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	if n := len(deferred.Defers); n > 0 {
+		atomic.AddInt32(&ec.Deferred, int32(min(n, math.MaxInt32)))
+		ec.ProcessDeferredGroup(deferred)
+	}
+
+	return out
+}
+
 var folderImplementors = []string{"Folder"}
 
 func (ec *executionContext) _Folder(ctx context.Context, sel ast.SelectionSet, obj *model.Folder) graphql.Marshaler {
@@ -2290,6 +2479,12 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				true, true,
 				func(ctx context.Context) graphql.Marshaler {
 					return ec._Query_bookmarks(ctx, field)
+				})
+		case "folders":
+			out.ResolveRootConcurrently(innerCtx, ec.OperationContext, i,
+				true, true,
+				func(ctx context.Context) graphql.Marshaler {
+					return ec._Query_folders(ctx, field)
 				})
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
@@ -2720,6 +2915,30 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 		graphql.AddInvalidNullFromMarshaler(ctx, "Boolean!")
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNFlatFolder2ᚕᚖmarkᚋgraphᚋmodelᚐFlatFolderᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.FlatFolder) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNFlatFolder2ᚖmarkᚋgraphᚋmodelᚐFlatFolder(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNFlatFolder2ᚖmarkᚋgraphᚋmodelᚐFlatFolder(ctx context.Context, sel ast.SelectionSet, v *model.FlatFolder) graphql.Marshaler {
+	if v == nil {
+		graphql.AddInvalidNullError(ctx, "FlatFolder!")
+		return graphql.Null
+	}
+	return ec._FlatFolder(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNFolder2ᚖmarkᚋgraphᚋmodelᚐFolder(ctx context.Context, sel ast.SelectionSet, v *model.Folder) graphql.Marshaler {
