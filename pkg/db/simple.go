@@ -1,9 +1,5 @@
 package db
 
-import (
-	. "mark/pkg"
-)
-
 // SimpleFolder is a data transfer object used in front-end application
 // where only a small subset of directory information is required.
 type SimpleFolder struct {
