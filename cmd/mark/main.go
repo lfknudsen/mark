@@ -6,6 +6,7 @@ import (
 	"log"
 	"mark/graph"
 	. "mark/pkg"
+	. "mark/pkg/db"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -73,6 +74,26 @@ func main() {
 		}
 		fmt.Println("Found", len(bookmarks), "bookmarks:")
 		text := strings.Join(lines, "\n")
+		tabWriter := tabwriter.NewWriter(os.Stdout, 3, 1, 3, ' ', 0)
+		_, err = fmt.Fprintln(tabWriter, text)
+		if err != nil {
+			log.Fatal(err)
+		}
+		_ = tabWriter.Flush()
+		os.Exit(0)
+	}
+
+	if args[0] == "folders" {
+		folders, err := GetFoldersFlat()
+		if err != nil {
+			log.Fatal(err)
+		}
+		strSlice := make([]string, 0, len(folders)+1)
+		strSlice = append(strSlice, "NAME\tUUID\tCHILD'S UUID")
+		for _, folder := range folders {
+			strSlice = append(strSlice, fmt.Sprint(folder))
+		}
+		text := strings.Join(strSlice, "\n")
 		tabWriter := tabwriter.NewWriter(os.Stdout, 3, 1, 3, ' ', 0)
 		_, err = fmt.Fprintln(tabWriter, text)
 		if err != nil {
