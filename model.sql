@@ -1,7 +1,9 @@
+BEGIN TRANSACTION;
+
 CREATE TABLE IF NOT EXISTS bookmarks
 (
     version        VARCHAR,
-    url            VARCHAR,
+    url            VARCHAR NOT NULL,
     name           VARCHAR,
     desc           VARCHAR,
     date_added     INT,
@@ -14,7 +16,7 @@ CREATE TABLE IF NOT EXISTS bookmarks
 CREATE TABLE IF NOT EXISTS folders
 (
     version         VARCHAR,
-    name            VARCHAR,
+    name            VARCHAR NOT NULL,
     desc            VARCHAR,
     date_added      INT,
     date_modified   INT,
@@ -67,3 +69,5 @@ CREATE TABLE IF NOT EXISTS child_relations
     parent REFERENCES folders (guid),
     child PRIMARY KEY REFERENCES bookmarks (guid)
 );
+
+COMMIT TRANSACTION;
