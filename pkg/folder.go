@@ -25,6 +25,26 @@ type BookmarkCollection struct {
 	Subfolders          []*BookmarkCollection `sql:"-" json:"subfolders,omitempty"`
 }
 
+func NewBookmarkCollection(name string) *BookmarkCollection {
+	now := time.Now().Unix()
+	out := &BookmarkCollection{
+		Version:             CurrentVersionBookmarkCollection,
+		Name:                name,
+		Guid:                uuid.New().String(),
+		DateAdded:           now,
+		DateModified:        now,
+		DateAddedContent:    now,
+		DateModifiedContent: now,
+		DateLastUsedContent: now,
+		Icon:                "",
+		Desc:                "",
+		Tags:                []string{},
+		Children:            make([]Bookmark, 0),
+		Subfolders:          []*BookmarkCollection{},
+	}
+	return out
+}
+
 func BookmarkCollectionFromChromium(cb *ChromiumBookmark) *BookmarkCollection {
 	out := BookmarkCollection{
 		Version:      CurrentVersionBookmarkCollection,
