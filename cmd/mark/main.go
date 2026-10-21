@@ -29,9 +29,12 @@ func main() {
 	}
 
 	initDirectories()
-	err := InitDatabase()
-	if err != nil {
-		log.Fatal(err)
+
+	if args[0] == "init" {
+		err := InitDatabase()
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	if args[0] == ImportCommand {
