@@ -86,6 +86,15 @@ func main() {
 		startServer()
 	}
 
+	if len(args) == 3 && args[0] == "add" && args[1] == "folder" {
+		coll := NewBookmarkCollection(args[2])
+		rows, err := InsertCollection(coll)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(rows, "rows affected in total.")
+	}
+
 	bookmarks := make([]Bookmark, 0, len(args))
 	for _, arg := range args {
 		bookmarks = append(bookmarks, NewBookmark(arg))
