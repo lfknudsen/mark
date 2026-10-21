@@ -30,22 +30,21 @@ const updateSubfolderRelationStatement = `UPDATE subfolder_relations SET parent 
 
 const ROOT_UUID = "0"
 
-var initScripts = []string{"model.sql", "triggers.sql"}
-
 func executeScript(filename string, tran *sql.Tx) (rowsAffected int64, err error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return 0, err
 	}
 	stmn, err := tran.Prepare(string(data))
-	defer closeStmt(stmn)
 	if err != nil {
 		return 0, err
 	}
 	res, err := stmn.Exec()
 	if err != nil {
+		closeStmt(stmn)
 		return 0, err
 	}
+	closeStmt(stmn)
 	return res.RowsAffected()
 }
 
@@ -66,7 +65,6 @@ func ExecuteScript(filename string) (rowsAffected int64, err error) {
 
 // InitDatabase initialises the tables in the bookmark database.
 func InitDatabase() error {
-	// Initialise the database with a root folder.
 	db, err := openDB()
 	if err != nil {
 		return err
@@ -76,18 +74,46 @@ func InitDatabase() error {
 	if err != nil {
 		return err
 	}
-	rows, err := executeScript("model.sql", tran)
+
+	// Delete contents of database
+	rows1, err := executeScript("clean.sql", tran)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, "Error executing clean.sql:")
+		return err
+	}
+
+	// Initialise tables
+	rows2, err := executeScript("model.sql", tran)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, "Error executing model.sql:")
+		return err
+	}
+
+	// Inserting root folder
 	stmn, err := tran.Prepare(insertCollectionStatement)
 	defer closeStmt(stmn)
 	if err != nil {
 		return err
 	}
 	now := time.Now().Unix()
-	_, err = stmn.Exec(pkg.CurrentVersionBookmarkCollection, ":root", "", now, now, now, "0", "")
+	rows, err := stmn.Exec(pkg.CurrentVersionBookmarkCollection, ":root", "", now, now, now, "0", "")
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Rows affected: %d\n", rows)
+	rows3, err := rows.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	// Create triggers
+	// Must be created after root folder has been inserted to avoid it being a child of itself
+	rows4, err := executeScript("triggers.sql", tran)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, "Error executing triggers.sql:")
+		return err
+	}
+
+	fmt.Printf("Rows affected: %d\n", rows1+rows2+rows3+rows4)
 	return tran.Commit()
 }
 
@@ -137,7 +163,7 @@ func InsertCollectionAsSub(parentUuid string, collections ...*pkg.BookmarkCollec
 	}
 	defer closeStmt(stmnt1)
 
-	stmnt2, err := tx.Prepare(insertSubfolderRelationStatement)
+	stmnt2, err := tx.Prepare(updateSubfolderRelationStatement)
 	if err != nil {
 		closeStmt(stmnt1)
 		_ = tx.Rollback()
@@ -294,7 +320,7 @@ func InsertChild(parentUuid string, bookmarks ...pkg.Bookmark) (rowsAffected int
 		}
 	}
 	closeStmt(stmnt)
-	stmnt, err = tx.Prepare(insertChildRelationStatement)
+	stmnt, err = tx.Prepare(updateChildRelationStatement)
 	if err != nil {
 		closeStmt(stmnt)
 		_ = tx.Rollback()
