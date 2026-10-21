@@ -1,5 +1,3 @@
-BEGIN TRANSACTION;
-
 CREATE TABLE IF NOT EXISTS bookmarks
 (
     version        VARCHAR,
@@ -69,5 +67,3 @@ CREATE TABLE IF NOT EXISTS child_relations
     parent REFERENCES folders (guid),
     child PRIMARY KEY REFERENCES bookmarks (guid)
 );
-
-COMMIT TRANSACTION;
