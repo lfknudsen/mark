@@ -30,7 +30,7 @@ const VERSION = "0.8.0"
 var execPath = getExecPath()
 var markDir = filepath.Join(execPath, ".mark")
 var DataDir = filepath.Join(markDir, ".data")
-var Port = flag.Uint("port", 8081, "Port to listen on")
+var Port = flag.String("port", "8081", "Port to listen on")
 
 var HELP = "Mark v" + VERSION +
 	"\nUsage:\n" +
