@@ -25,11 +25,12 @@ func getExecPath() string {
 	return filepath.Dir(p)
 }
 
-const VERSION = "0.8.0"
+const VERSION = "0.8.5"
 
 var execPath = getExecPath()
-var markDir = filepath.Join(execPath, ".mark")
-var DataDir = filepath.Join(markDir, ".data")
+var MarkDir = filepath.Join(execPath, ".mark")
+var DataDir = filepath.Join(MarkDir, ".data")
+var DatabaseName = "mark.db"
 var Port = flag.String("port", "8081", "Port to listen on")
 
 var HELP = "Mark v" + VERSION +
