@@ -36,6 +36,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		os.Exit(0)
 	}
 
 	if args[0] == ImportCommand {
@@ -105,6 +106,7 @@ func main() {
 
 	if args[0] == "server" {
 		startServer()
+		os.Exit(0)
 	}
 
 	if len(args) == 3 && args[0] == "add" && args[1] == "folder" {
@@ -175,9 +177,18 @@ func startServer() {
 		Cache: lru.New[string](100),
 	})
 
+	// Playground:
+	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
+	http.Handle("/query", srv)
+
+	log.Printf("connect to http://localhost:%s/ for GraphQL playground", *Port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", *Port), nil)) // if nil, goes to Playground?
+
+	/* Regular:
 	http.Handle("/query", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/graphql", srv)
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", *Port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", *Port), srv))
+	*/
 }
