@@ -28,6 +28,7 @@ func NewExecutableSchema(cfg Config) graphql.ExecutableSchema {
 type Config = graphql.Config[ResolverRoot, DirectiveRoot, ComplexityRoot]
 
 type ResolverRoot interface {
+	Folder() FolderResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
 }
@@ -43,9 +44,10 @@ type ComplexityRoot struct {
 	}
 
 	Folder struct {
-		Child func(childComplexity int) int
-		Desc  func(childComplexity int) int
-		Name  func(childComplexity int) int
+		Children   func(childComplexity int) int
+		Desc       func(childComplexity int) int
+		Name       func(childComplexity int) int
+		Subfolders func(childComplexity int) int
 	}
 
 	Mutation struct {
@@ -62,6 +64,10 @@ type ComplexityRoot struct {
 
 // region    ************************** generated!.gotpl **************************
 
+type FolderResolver interface {
+	Children(ctx context.Context, obj *model.Folder) ([]*model.Bookmark, error)
+	Subfolders(ctx context.Context, obj *model.Folder) ([]*model.Folder, error)
+}
 type MutationResolver interface {
 	CreateBookmark(ctx context.Context, input model.NewBookmark) (*model.Bookmark, error)
 	CreateFolder(ctx context.Context, input model.NewFolder) (*model.Folder, error)
@@ -107,12 +113,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Bookmark.Url(childComplexity), true
 
-	case "Folder.child":
-		if e.ComplexityRoot.Folder.Child == nil {
+	case "Folder.children":
+		if e.ComplexityRoot.Folder.Children == nil {
 			break
 		}
 
-		return e.ComplexityRoot.Folder.Child(childComplexity), true
+		return e.ComplexityRoot.Folder.Children(childComplexity), true
 	case "Folder.desc":
 		if e.ComplexityRoot.Folder.Desc == nil {
 			break
@@ -125,6 +131,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Folder.Name(childComplexity), true
+	case "Folder.subfolders":
+		if e.ComplexityRoot.Folder.Subfolders == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Folder.Subfolders(childComplexity), true
 
 	case "Mutation.createBookmark":
 		if e.ComplexityRoot.Mutation.CreateBookmark == nil {
@@ -283,8 +295,10 @@ func (ec *executionContext) childFields_Folder(ctx context.Context, field graphq
 	switch field.Name {
 	case "name":
 		return ec.fieldContext_Folder_name(ctx, field)
-	case "child":
-		return ec.fieldContext_Folder_child(ctx, field)
+	case "children":
+		return ec.fieldContext_Folder_children(ctx, field)
+	case "subfolders":
+		return ec.fieldContext_Folder_subfolders(ctx, field)
 	case "desc":
 		return ec.fieldContext_Folder_desc(ctx, field)
 	}
@@ -615,31 +629,63 @@ func (ec *executionContext) fieldContext_Folder_name(_ context.Context, field gr
 	return graphql.NewScalarFieldContext("Folder", field, false, false, "String")
 }
 
-func (ec *executionContext) _Folder_child(ctx context.Context, field graphql.CollectedField, obj *model.Folder) (ret graphql.Marshaler) {
+func (ec *executionContext) _Folder_children(ctx context.Context, field graphql.CollectedField, obj *model.Folder) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
 		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_Folder_child(ctx, field)
+			return ec.fieldContext_Folder_children(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return obj.Child, nil
+			return ec.Resolvers.Folder().Children(ctx, obj)
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.Folder) graphql.Marshaler {
-			return ec.marshalOFolder2ᚖmarkᚋgraphᚋmodelᚐFolder(ctx, selections, v)
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.Bookmark) graphql.Marshaler {
+			return ec.marshalOBookmark2ᚕᚖmarkᚋgraphᚋmodelᚐBookmark(ctx, selections, v)
 		},
 		true,
 		false,
 	)
 }
-func (ec *executionContext) fieldContext_Folder_child(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Folder_children(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Folder",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Bookmark(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Folder_subfolders(ctx context.Context, field graphql.CollectedField, obj *model.Folder) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Folder_subfolders(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Folder().Subfolders(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.Folder) graphql.Marshaler {
+			return ec.marshalOFolder2ᚕᚖmarkᚋgraphᚋmodelᚐFolder(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Folder_subfolders(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Folder",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields_Folder(ctx, field)
 		},
@@ -659,8 +705,8 @@ func (ec *executionContext) _Folder_desc(ctx context.Context, field graphql.Coll
 			return obj.Desc, nil
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
-			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
 		},
 		true,
 		false,
@@ -1948,7 +1994,7 @@ func (ec *executionContext) unmarshalInputNewBookmark(ctx context.Context, obj a
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"url", "name", "desc", "parent"}
+	fieldsInOrder := [...]string{"url", "name", "desc"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -1976,13 +2022,6 @@ func (ec *executionContext) unmarshalInputNewBookmark(ctx context.Context, obj a
 				return it, err
 			}
 			it.Desc = data
-		case "parent":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("parent"))
-			data, err := ec.unmarshalONewFolder2ᚖmarkᚋgraphᚋmodelᚐNewFolder(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Parent = data
 		}
 	}
 	return it, nil
@@ -2011,7 +2050,7 @@ func (ec *executionContext) unmarshalInputNewFolder(ctx context.Context, obj any
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "desc", "parent"}
+	fieldsInOrder := [...]string{"name", "desc", "child", "subFolder"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -2032,13 +2071,20 @@ func (ec *executionContext) unmarshalInputNewFolder(ctx context.Context, obj any
 				return it, err
 			}
 			it.Desc = data
-		case "parent":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("parent"))
+		case "child":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("child"))
+			data, err := ec.unmarshalONewBookmark2ᚖmarkᚋgraphᚋmodelᚐNewBookmark(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Child = data
+		case "subFolder":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subFolder"))
 			data, err := ec.unmarshalONewFolder2ᚖmarkᚋgraphᚋmodelᚐNewFolder(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Parent = data
+			it.SubFolder = data
 		}
 	}
 	return it, nil
@@ -2059,6 +2105,19 @@ func UnmarshalNewFolder(ctx context.Context, raw any) (model.NewFolder, error) {
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
+
+func (ec *executionContext) _BookmarkOrFolder(ctx context.Context, sel ast.SelectionSet, obj model.BookmarkOrFolder) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	default:
+		if typedObj, ok := obj.(graphql.Marshaler); ok {
+			return typedObj
+		} else {
+			panic(fmt.Errorf("unexpected type %T; non-generated variants of BookmarkOrFolder must implement graphql.Marshaler", obj))
+		}
+	}
+}
 
 // endregion ************************** interface.gotpl ***************************
 
@@ -2121,17 +2180,24 @@ func (ec *executionContext) _Folder(ctx context.Context, sel ast.SelectionSet, o
 		case "name":
 			out.Values[i] = ec._Folder_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "child":
-			out.Values[i] = ec._Folder_child(ctx, field, obj)
-			if out.Values[i] == graphql.RequiredNull {
-				out.Invalids++
-			}
+		case "children":
+			out.ResolveConcurrently(ec.OperationContext, &deferred, i,
+				true, false,
+				func(ctx context.Context) graphql.Marshaler {
+					return ec._Folder_children(ctx, field, obj)
+				})
+		case "subfolders":
+			out.ResolveConcurrently(ec.OperationContext, &deferred, i,
+				true, false,
+				func(ctx context.Context) graphql.Marshaler {
+					return ec._Folder_subfolders(ctx, field, obj)
+				})
 		case "desc":
 			out.Values[i] = ec._Folder_desc(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -2822,6 +2888,26 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
+func (ec *executionContext) marshalOBookmark2ᚕᚖmarkᚋgraphᚋmodelᚐBookmark(ctx context.Context, sel ast.SelectionSet, v []*model.Bookmark) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalOBookmark2ᚖmarkᚋgraphᚋmodelᚐBookmark(ctx, sel, v[i])
+	})
+
+	return ret
+}
+
+func (ec *executionContext) marshalOBookmark2ᚖmarkᚋgraphᚋmodelᚐBookmark(ctx context.Context, sel ast.SelectionSet, v *model.Bookmark) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Bookmark(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v any) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -2852,11 +2938,32 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
+func (ec *executionContext) marshalOFolder2ᚕᚖmarkᚋgraphᚋmodelᚐFolder(ctx context.Context, sel ast.SelectionSet, v []*model.Folder) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalOFolder2ᚖmarkᚋgraphᚋmodelᚐFolder(ctx, sel, v[i])
+	})
+
+	return ret
+}
+
 func (ec *executionContext) marshalOFolder2ᚖmarkᚋgraphᚋmodelᚐFolder(ctx context.Context, sel ast.SelectionSet, v *model.Folder) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Folder(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalONewBookmark2ᚖmarkᚋgraphᚋmodelᚐNewBookmark(ctx context.Context, v any) (*model.NewBookmark, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputNewBookmark(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalONewFolder2ᚖmarkᚋgraphᚋmodelᚐNewFolder(ctx context.Context, v any) (*model.NewFolder, error) {
@@ -2865,6 +2972,18 @@ func (ec *executionContext) unmarshalONewFolder2ᚖmarkᚋgraphᚋmodelᚐNewFol
 	}
 	res, err := ec.unmarshalInputNewFolder(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOString2string(ctx context.Context, v any) (string, error) {
+	res, err := graphql.UnmarshalString(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalString(v)
+	return res
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v any) (*string, error) {

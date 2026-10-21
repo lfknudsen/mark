@@ -8,9 +8,20 @@ package graph
 import (
 	"context"
 	"fmt"
+	"log"
 	"mark/graph/model"
 	. "mark/pkg"
 )
+
+// Children is the resolver for the children field.
+func (r *folderResolver) Children(ctx context.Context, obj *model.Folder) ([]*model.Bookmark, error) {
+	panic(fmt.Errorf("not implemented: Children - children"))
+}
+
+// Subfolders is the resolver for the subfolders field.
+func (r *folderResolver) Subfolders(ctx context.Context, obj *model.Folder) ([]*model.Folder, error) {
+	panic(fmt.Errorf("not implemented: Subfolders - subfolders"))
+}
 
 // CreateBookmark is the resolver for the createBookmark field.
 func (r *mutationResolver) CreateBookmark(ctx context.Context, input model.NewBookmark) (*model.Bookmark, error) {
@@ -22,6 +33,11 @@ func (r *mutationResolver) CreateBookmark(ctx context.Context, input model.NewBo
 		bookmark.Desc = *input.Desc
 	}
 	_, err := Insert(bookmark)
+	if err != nil {
+		log.Printf("error inserting bookmark: %v", err)
+		return nil, err
+	}
+	log.Printf("Successfully inserted bookmark")
 	output := &model.Bookmark{}
 	err = Convert(&bookmark, output)
 	return output, err
@@ -29,13 +45,43 @@ func (r *mutationResolver) CreateBookmark(ctx context.Context, input model.NewBo
 
 // CreateFolder is the resolver for the createFolder field.
 func (r *mutationResolver) CreateFolder(ctx context.Context, input model.NewFolder) (*model.Folder, error) {
-	panic(fmt.Errorf("not implemented: CreateFolder - createFolder"))
+	folder := NewBookmarkCollection(input.Name)
+	if input.Desc != nil {
+		folder.Desc = *input.Desc
+	}
+	var parent *BookmarkCollection = folder
+	for input.SubFolder != nil {
+		input = *input.SubFolder
+		child := NewBookmarkCollection(input.Name)
+		if input.Desc != nil {
+			child.Desc = *input.Desc
+		}
+		parent.Subfolders = append(parent.Subfolders, child)
+		parent = child
+	}
+	if input.Child != nil {
+		child := NewBookmark(input.Name)
+		if input.Desc != nil {
+			child.Desc = *input.Desc
+		}
+		parent.Children = append(parent.Children, child)
+	}
+	_, err := InsertCollection(folder)
+	if err != nil {
+		return nil, err
+	}
+	output := &model.Folder{}
+	err = Convert(&folder, output)
+	return output, err
 }
 
 // Bookmarks is the resolver for the bookmarks field.
 func (r *queryResolver) Bookmarks(ctx context.Context, folder string) ([]*model.Bookmark, error) {
 	return r.bookmarks, nil
 }
+
+// Folder returns FolderResolver implementation.
+func (r *Resolver) Folder() FolderResolver { return &folderResolver{r} }
 
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
@@ -44,6 +90,7 @@ func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
 type (
+	folderResolver   struct{ *Resolver }
 	mutationResolver struct{ *Resolver }
 	queryResolver    struct{ *Resolver }
 )

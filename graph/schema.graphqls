@@ -10,22 +10,28 @@ type Query {
   bookmarks(folder: String!): [Bookmark!]!
 }
 
+interface BookmarkOrFolder {
+  name: String
+  desc: String
+}
+
 input NewBookmark {
   url: String!
   name: String
   desc: String
-  parent: NewFolder
 }
 
 input NewFolder {
   name: String!
   desc: String
-  parent: NewFolder
+  child: NewBookmark
+  subFolder: NewFolder
 }
 
 type Folder {
   name: String!
-  child: Folder
+  children: [Bookmark]
+  subfolders: [Folder]
   desc: String
 }
 
