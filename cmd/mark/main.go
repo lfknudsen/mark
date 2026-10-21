@@ -142,9 +142,9 @@ func startServer() {
 		Cache: lru.New[string](100),
 	})
 
-	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", srv)
+	http.Handle("/query", playground.Handler("GraphQL playground", "/query"))
+	http.Handle("/graphql", srv)
 
-	log.Printf("connect to http://localhost:%d/ for GraphQL playground", Port)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *Port), nil))
+	log.Printf("connect to http://localhost:%s/ for GraphQL playground", *Port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", *Port), srv))
 }
