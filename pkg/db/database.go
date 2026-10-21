@@ -1,6 +1,7 @@
 package db
 
 import (
+	"database/sql"
 	"fmt"
 	"mark/pkg"
 	"os"
@@ -29,8 +30,43 @@ const updateSubfolderRelationStatement = `UPDATE subfolder_relations SET parent 
 
 const ROOT_UUID = "0"
 
+var initScripts = []string{"model.sql", "triggers.sql"}
+
+func executeScript(filename string, tran *sql.Tx) (rowsAffected int64, err error) {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return 0, err
+	}
+	stmn, err := tran.Prepare(string(data))
+	defer closeStmt(stmn)
+	if err != nil {
+		return 0, err
+	}
+	res, err := stmn.Exec()
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}
+
+func ExecuteScript(filename string) (rowsAffected int64, err error) {
+	db, err := openDB()
+	if err != nil {
+		return 0, err
+	}
+	defer closeDB(db)
+	tran, err := db.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer rollback(tran)
+	rowsAffected, err = executeScript(filename, tran)
+	return rowsAffected, tran.Commit()
+}
+
 // InitDatabase initialises the tables in the bookmark database.
 func InitDatabase() error {
+	// Initialise the database with a root folder.
 	db, err := openDB()
 	if err != nil {
 		return err
@@ -40,51 +76,18 @@ func InitDatabase() error {
 	if err != nil {
 		return err
 	}
-	defer rollback(tran)
-
-	// Create tables
-	data, err := os.ReadFile("model.sql")
+	rows, err := executeScript("model.sql", tran)
+	stmn, err := tran.Prepare(insertCollectionStatement)
+	defer closeStmt(stmn)
 	if err != nil {
-		return err
-	}
-	stmn, err := tran.Prepare(string(data))
-	if err != nil {
-		closeStmt(stmn)
-		return err
-	}
-	res, err := stmn.Exec()
-	if err != nil {
-		closeStmt(stmn)
-		return err
-	}
-	rowsAffected, err := res.RowsAffected()
-	if err != nil {
-		closeStmt(stmn)
-		return err
-	}
-	closeStmt(stmn)
-	err = tran.Commit()
-	if err != nil {
-		return err
-	}
-	// Initialise the database with a root folder.
-	tran, err = db.Begin()
-	if err != nil {
-		return err
-	}
-	stmn, err = tran.Prepare(insertCollectionStatement)
-	if err != nil {
-		closeStmt(stmn)
 		return err
 	}
 	now := time.Now().Unix()
-	res, err = stmn.Exec(pkg.CurrentVersionBookmarkCollection, ":root", "", now, now, now, "0", "")
+	_, err = stmn.Exec(pkg.CurrentVersionBookmarkCollection, ":root", "", now, now, now, "0", "")
 	if err != nil {
-		closeStmt(stmn)
 		return err
 	}
-	closeStmt(stmn)
-	fmt.Printf("Rows affected: %d\n", rowsAffected)
+	fmt.Printf("Rows affected: %d\n", rows)
 	return tran.Commit()
 }
 
