@@ -17,14 +17,6 @@ const insertCollectionStatement = `INSERT INTO folders
     (version, name, desc, date_added, date_modified, date_last_used, guid, icon) 
 	VALUES (?, ?, ?, ?, ?, ?, ?, ? )`
 
-const insertSubfolderRelationStatement = `INSERT INTO subfolder_relations
-    (parent, child)
-    VALUES (?, ?)`
-
-const insertChildRelationStatement = `INSERT INTO child_relations
-    (parent, child)
-    VALUES (?, ?)`
-
 const updateChildRelationStatement = `UPDATE child_relations SET parent = ? WHERE child = ?`
 const updateSubfolderRelationStatement = `UPDATE subfolder_relations SET parent = ? WHERE child = ?`
 
@@ -113,7 +105,13 @@ func InitDatabase() error {
 		return err
 	}
 
-	fmt.Printf("Rows affected: %d\n", rows1+rows2+rows3+rows4)
+	rows5, err := executeScript("seed.sql", tran)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, "Error executing seed.sql:")
+		return err
+	}
+
+	fmt.Printf("Rows affected: %d\n", rows1+rows2+rows3+rows4+rows5)
 	return tran.Commit()
 }
 
