@@ -76,9 +76,11 @@ type ComplexityRoot struct {
 type FolderResolver interface {
 	Children(ctx context.Context, obj *model.Folder) ([]*model.Bookmark, error)
 	Subfolders(ctx context.Context, obj *model.Folder) ([]*model.Folder, error)
+
+	Parent(ctx context.Context, obj *model.Folder) (*string, error)
 }
 type MutationResolver interface {
-	CreateBookmark(ctx context.Context, input model.NewBookmark) (*model.Bookmark, error)
+	CreateBookmark(ctx context.Context, input model.NewBookmark) (bool, error)
 	CreateFolder(ctx context.Context, input model.NewFolder) (bool, error)
 }
 type QueryResolver interface {
@@ -849,18 +851,18 @@ func (ec *executionContext) _Folder_parent(ctx context.Context, field graphql.Co
 			return ec.fieldContext_Folder_parent(ctx, field)
 		},
 		func(ctx context.Context) (any, error) {
-			return obj.Parent, nil
+			return ec.Resolvers.Folder().Parent(ctx, obj)
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
-			return ec.marshalOString2string(ctx, selections, v)
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
 		},
 		true,
 		false,
 	)
 }
 func (ec *executionContext) fieldContext_Folder_parent(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("Folder", field, false, false, "String")
+	return graphql.NewScalarFieldContext("Folder", field, true, true, "String")
 }
 
 func (ec *executionContext) _Mutation_createBookmark(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -876,8 +878,8 @@ func (ec *executionContext) _Mutation_createBookmark(ctx context.Context, field 
 			return ec.Resolvers.Mutation().CreateBookmark(ctx, fc.Args["input"].(model.NewBookmark))
 		},
 		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *model.Bookmark) graphql.Marshaler {
-			return ec.marshalNBookmark2ᚖmarkᚋgraphᚋmodelᚐBookmark(ctx, selections, v)
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
 		},
 		true,
 		true,
@@ -890,7 +892,7 @@ func (ec *executionContext) fieldContext_Mutation_createBookmark(ctx context.Con
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.childFields_Bookmark(ctx, field)
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	defer func() {
@@ -2422,10 +2424,11 @@ func (ec *executionContext) _Folder(ctx context.Context, sel ast.SelectionSet, o
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "parent":
-			out.Values[i] = ec._Folder_parent(ctx, field, obj)
-			if out.Values[i] == graphql.RequiredNull {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
+			out.ResolveConcurrently(ec.OperationContext, &deferred, i,
+				true, false,
+				func(ctx context.Context) graphql.Marshaler {
+					return ec._Folder_parent(ctx, field, obj)
+				})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

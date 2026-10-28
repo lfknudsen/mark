@@ -44,6 +44,6 @@ type FlatFolder {
 }
 
 type Mutation {
-  createBookmark(input: NewBookmark!): Bookmark!
+  createBookmark(input: NewBookmark!): Boolean!
   createFolder(input: NewFolder!): Boolean!
 }

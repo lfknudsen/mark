@@ -332,27 +332,24 @@ func insertChild(tx *sql.Tx, parentUuid string, bookmarks ...pkg.Bookmark) (rows
 	stmnt, err = tx.Prepare(updateChildRelationStatement)
 	fmt.Println("Prepared an update statement.")
 	if err != nil {
-		closeStmt(stmnt)
 		_ = tx.Rollback()
 		return 0, err
 	}
+	defer closeStmt(stmnt)
 	for _, b := range bookmarks {
 		res, err := stmnt.Exec(parentUuid, b.Guid)
 		fmt.Println("Executed an update statement.")
 		if err != nil {
-			closeStmt(stmnt)
 			_ = tx.Rollback()
 			return 0, err
 		}
 		affected, err := res.RowsAffected()
 		rowsAffected += affected
 		if err != nil {
-			closeStmt(stmnt)
 			_ = tx.Rollback()
 			return 0, err
 		}
 	}
-	closeStmt(stmnt)
 	fmt.Println("Closed the update statement. Now committing.")
 	return rowsAffected, nil
 }
@@ -364,7 +361,10 @@ func InsertChild(parentUuid string, bookmarks ...pkg.Bookmark) (rowsAffected int
 		return rowsAffected, err
 	}
 	defer closeDB(db)
-	tx, _ := db.Begin()
+	tx, err := db.Begin()
+	if err != nil {
+		return rowsAffected, err
+	}
 	rowsAffected, err = insertChild(tx, parentUuid, bookmarks...)
 	if err != nil {
 		return rowsAffected, tx.Rollback()

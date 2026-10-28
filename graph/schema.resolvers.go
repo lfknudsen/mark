@@ -25,8 +25,13 @@ func (r *folderResolver) Subfolders(ctx context.Context, obj *model.Folder) ([]*
 	panic(fmt.Errorf("not implemented: Subfolders - subfolders"))
 }
 
+// Parent is the resolver for the parent field.
+func (r *folderResolver) Parent(ctx context.Context, obj *model.Folder) (*string, error) {
+	panic(fmt.Errorf("not implemented: Parent - parent"))
+}
+
 // CreateBookmark is the resolver for the createBookmark field.
-func (r *mutationResolver) CreateBookmark(ctx context.Context, input model.NewBookmark) (*model.Bookmark, error) {
+func (r *mutationResolver) CreateBookmark(ctx context.Context, input model.NewBookmark) (bool, error) {
 	bookmark := NewBookmark(input.URL)
 	if input.Name != nil {
 		bookmark.Name = *input.Name
@@ -37,17 +42,13 @@ func (r *mutationResolver) CreateBookmark(ctx context.Context, input model.NewBo
 	_, err := db.InsertChild(input.Parent, bookmark)
 	if err != nil {
 		log.Printf("error inserting bookmark: %v", err)
-		return nil, err
+		return false, err
 	}
-	log.Printf("Successfully inserted bookmark")
-	output := &model.Bookmark{}
-	err = Convert(&bookmark, output)
-	return output, err
+	return true, nil
 }
 
 // CreateFolder is the resolver for the createFolder field.
 func (r *mutationResolver) CreateFolder(ctx context.Context, input model.NewFolder) (bool, error) {
-	fmt.Printf("Received request to create a folder!!! %+v\n", input)
 	folder := NewBookmarkCollection(input.Name)
 	folder.Desc = input.Desc
 	_, err := db.InsertCollectionAsSub(input.Parent, folder)
