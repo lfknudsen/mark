@@ -20,13 +20,13 @@ input NewBookmark {
   url: String!
   name: String
   desc: String
+  parent: String!
 }
 
 input NewFolder {
   name: String!
-  desc: String
-  child: NewBookmark
-  subFolder: NewFolder
+  desc: String!
+  parent: String!
 }
 
 type Folder {
@@ -34,6 +34,7 @@ type Folder {
   children: [Bookmark]
   subfolders: [Folder]
   desc: String
+  parent: String
 }
 
 type FlatFolder {
@@ -44,5 +45,5 @@ type FlatFolder {
 
 type Mutation {
   createBookmark(input: NewBookmark!): Bookmark!
-  createFolder(input: NewFolder!): Folder!
+  createFolder(input: NewFolder!): Boolean!
 }

@@ -9,9 +9,10 @@ import (
 	"context"
 	"fmt"
 	"log"
+
 	"mark/graph/model"
 	. "mark/pkg"
-	. "mark/pkg/db"
+	"mark/pkg/db"
 )
 
 // Children is the resolver for the children field.
@@ -33,7 +34,7 @@ func (r *mutationResolver) CreateBookmark(ctx context.Context, input model.NewBo
 	if input.Desc != nil {
 		bookmark.Desc = *input.Desc
 	}
-	_, err := Insert(bookmark)
+	_, err := db.InsertChild(input.Parent, bookmark)
 	if err != nil {
 		log.Printf("error inserting bookmark: %v", err)
 		return nil, err
@@ -45,35 +46,16 @@ func (r *mutationResolver) CreateBookmark(ctx context.Context, input model.NewBo
 }
 
 // CreateFolder is the resolver for the createFolder field.
-func (r *mutationResolver) CreateFolder(ctx context.Context, input model.NewFolder) (*model.Folder, error) {
+func (r *mutationResolver) CreateFolder(ctx context.Context, input model.NewFolder) (bool, error) {
+	fmt.Printf("Received request to create a folder!!! %+v\n", input)
 	folder := NewBookmarkCollection(input.Name)
-	if input.Desc != nil {
-		folder.Desc = *input.Desc
-	}
-	var parent *BookmarkCollection = folder
-	for input.SubFolder != nil {
-		input = *input.SubFolder
-		child := NewBookmarkCollection(input.Name)
-		if input.Desc != nil {
-			child.Desc = *input.Desc
-		}
-		parent.Subfolders = append(parent.Subfolders, child)
-		parent = child
-	}
-	if input.Child != nil {
-		child := NewBookmark(input.Name)
-		if input.Desc != nil {
-			child.Desc = *input.Desc
-		}
-		parent.Children = append(parent.Children, child)
-	}
-	_, err := InsertCollection(folder)
+	folder.Desc = input.Desc
+	_, err := db.InsertCollectionAsSub(input.Parent, folder)
 	if err != nil {
-		return nil, err
+		log.Printf("error inserting folder: %v", err)
+		return false, err
 	}
-	output := &model.Folder{}
-	err = Convert(&folder, output)
-	return output, err
+	return true, err
 }
 
 // Bookmarks is the resolver for the bookmarks field.
@@ -83,7 +65,7 @@ func (r *queryResolver) Bookmarks(ctx context.Context, folder string) ([]*model.
 
 // Folders is the resolver for the folders field.
 func (r *queryResolver) Folders(ctx context.Context) ([]*model.FlatFolder, error) {
-	dirs, err := GetFoldersFlat()
+	dirs, err := db.GetFoldersFlat()
 	output := make([]*model.FlatFolder, 0, len(dirs))
 	for _, dir := range dirs {
 		out := model.FlatFolder{

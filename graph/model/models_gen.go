@@ -12,16 +12,16 @@ type Mutation struct {
 }
 
 type NewBookmark struct {
-	URL  string  `json:"url"`
-	Name *string `json:"name,omitempty"`
-	Desc *string `json:"desc,omitempty"`
+	URL    string  `json:"url"`
+	Name   *string `json:"name,omitempty"`
+	Desc   *string `json:"desc,omitempty"`
+	Parent string  `json:"parent"`
 }
 
 type NewFolder struct {
-	Name      string       `json:"name"`
-	Desc      *string      `json:"desc,omitempty"`
-	Child     *NewBookmark `json:"child,omitempty"`
-	SubFolder *NewFolder   `json:"subFolder,omitempty"`
+	Name   string `json:"name"`
+	Desc   string `json:"desc"`
+	Parent string `json:"parent"`
 }
 
 type Query struct {

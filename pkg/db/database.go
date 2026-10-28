@@ -3,9 +3,10 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"mark/pkg"
 	"os"
 	"time"
+
+	"mark/pkg"
 )
 
 var connectionString = fmt.Sprintf("file:%s/%s", pkg.MarkDir, pkg.DatabaseName)
@@ -105,6 +106,7 @@ func InitDatabase() error {
 		return err
 	}
 
+	// Seed the database with some sample data.
 	rows5, err := executeScript("seed.sql", tran)
 	if err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, "Error executing seed.sql:")
@@ -144,16 +146,9 @@ func ListBookmarks() ([]pkg.Bookmark, error) {
 	return output, err
 }
 
-func InsertCollectionAsSub(parentUuid string, collections ...*pkg.BookmarkCollection) (rowsAffected int64, err error) {
-	db, err := openDB()
-	if err != nil {
-		return rowsAffected, err
-	}
-	defer closeDB(db)
-	tx, err := db.Begin()
-	if err != nil {
-		return rowsAffected, err
-	}
+func insertCollectionAsSub(tx *sql.Tx, parentUuid string, collections ...*pkg.BookmarkCollection) (rowsAffected int64, err error) {
+	fmt.Println("Beginning transaction...")
+	fmt.Println("Preparing statement 1...")
 	stmnt1, err := tx.Prepare(insertCollectionStatement)
 	if err != nil {
 		_ = tx.Rollback()
@@ -161,6 +156,7 @@ func InsertCollectionAsSub(parentUuid string, collections ...*pkg.BookmarkCollec
 	}
 	defer closeStmt(stmnt1)
 
+	fmt.Println("Preparing statement 2...")
 	stmnt2, err := tx.Prepare(updateSubfolderRelationStatement)
 	if err != nil {
 		closeStmt(stmnt1)
@@ -170,6 +166,7 @@ func InsertCollectionAsSub(parentUuid string, collections ...*pkg.BookmarkCollec
 	defer closeStmt(stmnt2)
 
 	for _, c := range collections {
+		fmt.Println("Executing statement 1...")
 		res, err := stmnt1.Exec(c.Version, c.Name, c.Desc, c.DateAdded,
 			c.DateModified, c.DateLastUsedContent, c.Guid, c.Icon)
 		if err != nil {
@@ -181,6 +178,7 @@ func InsertCollectionAsSub(parentUuid string, collections ...*pkg.BookmarkCollec
 			_ = tx.Rollback()
 			return rowsAffected, err
 		}
+		fmt.Println("Executing statement 2...")
 		res, err = stmnt2.Exec(parentUuid, c.Guid)
 		if err != nil {
 			_ = tx.Rollback()
@@ -192,34 +190,47 @@ func InsertCollectionAsSub(parentUuid string, collections ...*pkg.BookmarkCollec
 			return rowsAffected, err
 		}
 	}
+	closeStmt(stmnt1)
 	closeStmt(stmnt2)
-	err = tx.Commit()
-	if err != nil {
-		return rowsAffected, err
-	}
 	for _, c := range collections {
-		affected, err := InsertCollectionAsSub(c.Guid, c.Subfolders...)
+		affected, err := insertCollectionAsSub(tx, c.Guid, c.Subfolders...)
 		rowsAffected += affected
 		if err != nil {
 			return rowsAffected, err
 		}
 
-		affected, err = Insert(c.Children...)
+		affected, err = insertChild(tx, ROOT_UUID, c.Children...)
 		rowsAffected += affected
 		if err != nil {
 			return rowsAffected, err
 		}
 		for _, child := range c.Children {
-			affected, err = setChild(c.Guid, child.Guid)
+			affected, err = setChild(tx, c.Guid, child.Guid)
 			rowsAffected += affected
 			if err != nil {
 				return rowsAffected, err
 			}
 		}
 	}
-	fmt.Print(".")
-
+	fmt.Println("Finished inserting collection...")
 	return rowsAffected, nil
+}
+
+func InsertCollectionAsSub(parentUuid string, collections ...*pkg.BookmarkCollection) (rowsAffected int64, err error) {
+	fmt.Println("Opening the database...")
+	db, err := openDB()
+	if err != nil {
+		return rowsAffected, err
+	}
+	defer closeDB(db)
+	fmt.Println("Inserting collections...")
+	tx, _ := db.Begin()
+
+	rowsAffected, err = insertCollectionAsSub(tx, parentUuid, collections...)
+	if err != nil {
+		return rowsAffected, tx.Rollback()
+	}
+	return rowsAffected, tx.Commit()
 }
 
 func InsertCollection(collections ...*pkg.BookmarkCollection) (rowsAffected int64, err error) {
@@ -256,16 +267,7 @@ func setSubfolder(parentUuid string, childUuid string) (rowsAffected int64, err 
 	return rowsAffected, tx.Commit()
 }
 
-func setChild(parentUuid string, childUuid string) (rowsAffected int64, err error) {
-	db, err := openDB()
-	if err != nil {
-		return rowsAffected, err
-	}
-	defer closeDB(db)
-	tx, err := db.Begin()
-	if err != nil {
-		return rowsAffected, err
-	}
+func setChild(tx *sql.Tx, parentUuid string, childUuid string) (rowsAffected int64, err error) {
 	statement, err := tx.Prepare(updateChildRelationStatement)
 	if err != nil {
 		_ = tx.Rollback()
@@ -283,20 +285,27 @@ func setChild(parentUuid string, childUuid string) (rowsAffected int64, err erro
 		_ = tx.Rollback()
 		return rowsAffected, err
 	}
-	return rowsAffected, tx.Commit()
+	return rowsAffected, nil
 }
 
-func InsertChild(parentUuid string, bookmarks ...pkg.Bookmark) (rowsAffected int64, err error) {
+func SetChild(parentUuid string, childUuid string) (rowsAffected int64, err error) {
 	db, err := openDB()
 	if err != nil {
 		return rowsAffected, err
 	}
 	defer closeDB(db)
-	tx, err := db.Begin()
+	tx, _ := db.Begin()
+	rowsAffected, err = setChild(tx, parentUuid, childUuid)
 	if err != nil {
-		return rowsAffected, err
+		return rowsAffected, tx.Rollback()
 	}
+	return rowsAffected, tx.Commit()
+}
+
+func insertChild(tx *sql.Tx, parentUuid string, bookmarks ...pkg.Bookmark) (rowsAffected int64, err error) {
+	fmt.Println("Begun a transaction.")
 	stmnt, err := tx.Prepare(insertStatement)
+	fmt.Println("Prepared a statement.")
 	if err != nil {
 		_ = tx.Rollback()
 		return rowsAffected, err
@@ -304,6 +313,7 @@ func InsertChild(parentUuid string, bookmarks ...pkg.Bookmark) (rowsAffected int
 	for _, b := range bookmarks {
 		res, err := stmnt.Exec(b.Version, b.Url, b.Name, b.Desc, b.DateAdded,
 			b.DateModified, b.DateLastUsed, b.Guid, b.Icon)
+		fmt.Println("Executed a statement.")
 		if err != nil {
 			closeStmt(stmnt)
 			_ = tx.Rollback()
@@ -318,7 +328,9 @@ func InsertChild(parentUuid string, bookmarks ...pkg.Bookmark) (rowsAffected int
 		}
 	}
 	closeStmt(stmnt)
+	fmt.Println("Closed a statement.")
 	stmnt, err = tx.Prepare(updateChildRelationStatement)
+	fmt.Println("Prepared an update statement.")
 	if err != nil {
 		closeStmt(stmnt)
 		_ = tx.Rollback()
@@ -326,6 +338,7 @@ func InsertChild(parentUuid string, bookmarks ...pkg.Bookmark) (rowsAffected int
 	}
 	for _, b := range bookmarks {
 		res, err := stmnt.Exec(parentUuid, b.Guid)
+		fmt.Println("Executed an update statement.")
 		if err != nil {
 			closeStmt(stmnt)
 			_ = tx.Rollback()
@@ -340,5 +353,21 @@ func InsertChild(parentUuid string, bookmarks ...pkg.Bookmark) (rowsAffected int
 		}
 	}
 	closeStmt(stmnt)
+	fmt.Println("Closed the update statement. Now committing.")
+	return rowsAffected, nil
+}
+
+func InsertChild(parentUuid string, bookmarks ...pkg.Bookmark) (rowsAffected int64, err error) {
+	db, err := openDB()
+	fmt.Println("Opened the database.")
+	if err != nil {
+		return rowsAffected, err
+	}
+	defer closeDB(db)
+	tx, _ := db.Begin()
+	rowsAffected, err = insertChild(tx, parentUuid, bookmarks...)
+	if err != nil {
+		return rowsAffected, tx.Rollback()
+	}
 	return rowsAffected, tx.Commit()
 }

@@ -2,9 +2,10 @@ package pkg
 
 import (
 	"log"
-	. "mark/pkg/extract"
 	"time"
 	"uuid"
+
+	. "mark/pkg/extract"
 )
 
 const CurrentVersionBookmarkCollection = "1.0.0"
